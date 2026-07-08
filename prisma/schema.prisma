@@ -174,6 +174,25 @@ model Product {
   @@index([category])
 }
 
+// A member's request/approval to become a marketplace seller, plus the QRIS payment
+// details buyers use to pay them (facilitator-only: settlement is direct, off-platform).
+model SellerProfile {
+  id          String    @id @default(cuid())
+  memberId    String    @unique
+  storeName   String
+  phone       String // WhatsApp / contact
+  qrisNumber  String? // optional QRIS / merchant id
+  qrisImage   String? // data URL of the seller's QRIS QR code
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  note        String? // admin decision note
+  decidedById String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+}
+
 // Append-only audit trail for privileged / value-affecting actions.
 model AuditLog {
   id         String   @id @default(cuid())

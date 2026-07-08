@@ -1,46 +1,62 @@
+import { getCurrentActor } from "@/lib/auth/session";
+import { getSellerProfile, getMyProducts } from "@/lib/domain/seller";
 import { PageHeader, Card, Alert } from "@/components/ui";
 import { ModuleSubnav, MARKET_TABS } from "@/components/ModuleSubnav";
+import { SellerRequestForm } from "@/components/SellerRequestForm";
+import { SellerDashboard } from "@/components/SellerDashboard";
 
-export default function SellPage() {
+export default async function SellPage() {
+  const actor = await getCurrentActor();
+  if (!actor) return null;
+
+  const profile = await getSellerProfile(actor.id);
+  const status = profile?.status ?? null;
+
   return (
     <div>
       <ModuleSubnav tabs={MARKET_TABS} />
-      <PageHeader
-        title="Jadi Penjual"
-        subtitle="Create and manage your listings"
-        icon="🏪"
-      />
+      <PageHeader title="Jadi Penjual" icon="🏪" />
 
-      <Alert tone="info">
-        Seller tools (create a listing, upload photos, set price, manage stock) ship in the
-        marketplace phase. Here's a preview of the listing form.
-      </Alert>
-
-      <Card className="mt-4 max-w-xl space-y-3 opacity-70">
-        <div>
-          <label className="label">Product name</label>
-          <input className="input" placeholder="e.g. Study desk lamp" disabled />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Price (IDR)</label>
-            <input className="input" placeholder="45000" disabled />
-          </div>
-          <div>
-            <label className="label">Stock</label>
-            <input className="input" placeholder="1" disabled />
-          </div>
-        </div>
-        <div>
-          <label className="label">Photo</label>
-          <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-navy-200 text-sm text-navy-400">
-            Upload (coming soon)
-          </div>
-        </div>
-        <button className="btn-gold w-full" disabled title="Coming soon">
-          Publish listing
-        </button>
-      </Card>
+      {status === "APPROVED" ? (
+        <SellerDashboard products={await getMyProducts(actor.id)} />
+      ) : status === "PENDING" ? (
+        <Card className="max-w-lg">
+          <Alert tone="info">
+            Your request to become a seller is <strong>pending</strong> — a market
+            admin will review it soon.
+          </Alert>
+        </Card>
+      ) : (
+        <Card className="max-w-lg">
+          <h2 className="mb-1 font-semibold text-navy-800">
+            Request to Become a Seller
+          </h2>
+          <p className="mb-4 text-sm text-navy-500">
+            Add your details and QRIS so buyers can pay you directly. A market admin
+            will review your request.
+          </p>
+          {status === "REJECTED" && (
+            <div className="mb-4">
+              <Alert tone="error">
+                Your previous request wasn&rsquo;t approved. Update your details and
+                re-apply below.
+              </Alert>
+            </div>
+          )}
+          <SellerRequestForm
+            defaults={
+              profile
+                ? {
+                    storeName: profile.storeName,
+                    phone: profile.phone,
+                    qrisNumber: profile.qrisNumber ?? undefined,
+                    qrisImage: profile.qrisImage,
+                  }
+                : undefined
+            }
+          />
+        </Card>
+      )}
     </div>
   );
 }

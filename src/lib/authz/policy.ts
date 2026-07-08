@@ -165,6 +165,6 @@ export function adminHomeFor(actor: Actor): string | null {
   if (hasRole(actor, "ACADEMIC_ADMIN")) return "/dashboard/academic";
   if (hasRole(actor, "DORMITORY_ADMIN")) return "/dashboard/dorm";
   if (hasRole(actor, "CAFETERIA_ADMIN")) return "/dashboard/cafeteria";
-  if (hasRole(actor, "MARKET_ADMIN")) return "/dashboard/market/sell";
+  if (hasRole(actor, "MARKET_ADMIN")) return "/dashboard/market/admin";
   return null;
 }
