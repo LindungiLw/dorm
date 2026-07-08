@@ -8,10 +8,12 @@ import { MODULES, GaugeIcon } from "@/components/nav";
 // bottom bar (main modules) + the sub-menu capsule (see BottomBar / SubMenuCapsule).
 export function Sidebar({
   initials,
+  photoUrl = null,
   isAdmin = false,
   adminHref,
 }: {
   initials: string;
+  photoUrl?: string | null;
   isAdmin?: boolean;
   adminHref?: string;
 }) {
@@ -24,13 +26,18 @@ export function Sidebar({
         href="/dashboard/profile"
         aria-label="Profile"
         title="Profile"
-        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ring-2 transition ${
+        className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 transition ${
           active("/dashboard/profile")
             ? "bg-navy-800 ring-navy-800"
             : "bg-navy-600 ring-transparent hover:ring-navy-200"
         }`}
       >
-        {initials}
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
       </Link>
 
       <span className="my-0.5 h-px w-6 bg-navy-100" />

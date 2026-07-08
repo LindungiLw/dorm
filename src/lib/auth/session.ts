@@ -25,6 +25,7 @@ export async function getCurrentActor(): Promise<Actor | null> {
     memberType: m.memberType,
     status: m.status,
     dormId: m.dormId,
+    photoUrl: m.photoUrl,
     roles: m.roleAssignments.map((r) => ({
       role: r.role as Role,
       scopeType: r.scopeType,

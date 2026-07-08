@@ -33,6 +33,7 @@ export default async function DashboardLayout({
     fullName: actor.fullName,
     roleLabel: roleLabel(actor),
     initials: initialsOf(actor.fullName),
+    photoUrl: actor.photoUrl,
     isAdmin: adminHref !== null,
     adminHref: adminHref ?? undefined,
   };

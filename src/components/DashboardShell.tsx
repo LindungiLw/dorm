@@ -11,6 +11,7 @@ export type ShellUser = {
   fullName: string;
   roleLabel: string;
   initials: string;
+  photoUrl: string | null;
   isAdmin: boolean;
   adminHref?: string;
 };
@@ -36,6 +37,7 @@ export function DashboardShell({
           {/* Desktop: floating 3-module capsule (left) */}
           <Sidebar
             initials={user.initials}
+            photoUrl={user.photoUrl}
             isAdmin={user.isAdmin}
             adminHref={user.adminHref}
           />
@@ -53,8 +55,17 @@ export function DashboardShell({
             aria-label="Open profile"
             className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-navy-50"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy-600 text-xs font-bold text-white">
-              {user.initials}
+            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-navy-600 text-xs font-bold text-white">
+              {user.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.photoUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                user.initials
+              )}
             </span>
             <span className="hidden text-right sm:block">
               <span className="block text-sm font-semibold leading-tight text-navy-800">

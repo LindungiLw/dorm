@@ -30,6 +30,7 @@ export type Actor = {
   memberType: string; // STUDENT | FACULTY
   status: string; // ACTIVE | SUSPENDED | INACTIVE
   dormId: string | null;
+  photoUrl: string | null; // Google account photo or custom upload
   roles: RoleGrant[];
 };
 
