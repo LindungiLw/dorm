@@ -123,8 +123,15 @@ model ExitRequest {
   dormId      String
   destination String
   departureAt DateTime
-  returnAt    DateTime
-  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  returnAt    DateTime // expected return
+  // Departure location point (captured when leaving the dorm).
+  departureLat Float?
+  departureLng Float?
+  // Return pass: actual return time + location point (captured when back at the dorm).
+  actualReturnAt DateTime?
+  returnLat      Float?
+  returnLng      Float?
+  status      String    @default("OUT") // OUT | RETURNED (self-service, no approval)
   decidedById String?
   decidedAt   DateTime?
   decisionNote String?

@@ -40,6 +40,8 @@ const STATUS_STYLES: Record<string, string> = {
   REDEEMED: "bg-emerald-100 text-emerald-800",
   EXPIRED: "bg-gray-100 text-gray-500",
   SUSPENDED: "bg-red-100 text-red-700",
+  OUT: "bg-sky-100 text-sky-700",
+  RETURNED: "bg-emerald-100 text-emerald-800",
 };
 
 export function StatusBadge({ status }: { status: string }) {

@@ -9,24 +9,31 @@ import { writeAudit } from "@/lib/audit";
 
 export type ExitState = { error?: string; ok?: string };
 
-const createSchema = z.object({
-  destination: z.string().min(2, "Destination is required.").max(200),
+function parseCoord(v: FormDataEntryValue | null): number | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) && Math.abs(n) <= 180 ? n : null;
+}
+
+// ---- Leave Pass: student self-notifies they are leaving the dorm --------------------
+const leaveSchema = z.object({
+  destination: z.string().trim().min(2, "Where are you going?").max(200),
   departureAt: z.string().min(1),
   returnAt: z.string().min(1),
 });
 
-export async function createExitRequestAction(
+export async function submitLeavePassAction(
   _prev: ExitState,
   formData: FormData,
 ): Promise<ExitState> {
   const actor = await getCurrentActor();
   if (!actor) return { error: "Your session has expired. Please sign in again." };
-
   if (!can(actor, "exit:create", { ownerId: actor.id })) {
-    return { error: "Only dorm-resident students can submit exit requests." };
+    return { error: "Only dorm-resident students can log a leave pass." };
   }
 
-  const parsed = createSchema.safeParse({
+  const parsed = leaveSchema.safeParse({
     destination: formData.get("destination"),
     departureAt: formData.get("departureAt"),
     returnAt: formData.get("returnAt"),
@@ -38,81 +45,87 @@ export async function createExitRequestAction(
   const departureAt = new Date(parsed.data.departureAt);
   const returnAt = new Date(parsed.data.returnAt);
   if (Number.isNaN(departureAt.getTime()) || Number.isNaN(returnAt.getTime())) {
-    return { error: "Please provide valid departure and return times." };
+    return { error: "Please provide valid departure and expected-return times." };
   }
   if (returnAt <= departureAt) {
-    return { error: "Return time must be after departure time." };
+    return { error: "Expected return must be after departure." };
+  }
+
+  // One active pass at a time — log your return before leaving again.
+  const active = await prisma.exitRequest.findFirst({
+    where: { memberId: actor.id, status: "OUT" },
+    select: { id: true },
+  });
+  if (active) {
+    return {
+      error: "You still have an active leave pass — submit your Return Pass first.",
+    };
   }
 
   const created = await prisma.exitRequest.create({
     data: {
       memberId: actor.id,
       dormId: actor.dormId as string,
-      destination: parsed.data.destination.trim(),
+      destination: parsed.data.destination,
       departureAt,
       returnAt,
-      status: "PENDING",
+      departureLat: parseCoord(formData.get("lat")),
+      departureLng: parseCoord(formData.get("lng")),
+      status: "OUT",
     },
   });
 
-  await writeAudit(actor, "exit.create", "ExitRequest", created.id, {
+  await writeAudit(actor, "exit.leave", "ExitRequest", created.id, {
     dormId: actor.dormId,
   });
-  revalidatePath("/dashboard/permissions");
-  return { ok: "Exit request submitted. Awaiting dorm admin approval." };
+  revalidatePath("/dashboard/permission/exit");
+  return { ok: "Leave pass logged. Have a safe trip!" };
 }
 
-const decideSchema = z.object({
-  requestId: z.string().min(1),
-  decision: z.enum(["APPROVE", "REJECT"]),
-  note: z.string().max(300).optional(),
-});
+// ---- Return Pass: student logs their actual return to the dorm ----------------------
+const returnSchema = z.object({ actualReturnAt: z.string().min(1) });
 
-export async function decideExitRequestAction(
+export async function submitReturnPassAction(
   _prev: ExitState,
   formData: FormData,
 ): Promise<ExitState> {
   const actor = await getCurrentActor();
   if (!actor) return { error: "Your session has expired. Please sign in again." };
 
-  const parsed = decideSchema.safeParse({
-    requestId: formData.get("requestId"),
-    decision: formData.get("decision"),
-    note: formData.get("note") ?? undefined,
+  const active = await prisma.exitRequest.findFirst({
+    where: { memberId: actor.id, status: "OUT" },
+    orderBy: { departureAt: "desc" },
+    select: { id: true },
   });
-  if (!parsed.success) return { error: "Invalid decision." };
-
-  const request = await prisma.exitRequest.findUnique({
-    where: { id: parsed.data.requestId },
-  });
-  if (!request) return { error: "Request not found." };
-
-  // Role + SCOPE check: a dorm admin may only decide requests in their own dorm.
-  if (!can(actor, "exit:decide", { dormId: request.dormId })) {
-    return { error: "You are not authorized to decide requests for this dorm." };
+  if (!active) {
+    return { error: "You have no active leave pass to close." };
   }
 
-  const newStatus = parsed.data.decision === "APPROVE" ? "APPROVED" : "REJECTED";
+  const parsed = returnSchema.safeParse({
+    actualReturnAt: formData.get("actualReturnAt"),
+  });
+  if (!parsed.success) return { error: "Enter your return date & time." };
 
-  // Guarded one-way transition: decide ONLY where still PENDING. If two admins act at
-  // once, exactly one wins (count === 1); the other is told it was already decided.
+  const actualReturnAt = new Date(parsed.data.actualReturnAt);
+  if (Number.isNaN(actualReturnAt.getTime())) {
+    return { error: "Please provide a valid return time." };
+  }
+
+  // Guarded transition: close only while still OUT (ownership enforced by memberId).
   const upd = await prisma.exitRequest.updateMany({
-    where: { id: request.id, status: "PENDING" },
+    where: { id: active.id, memberId: actor.id, status: "OUT" },
     data: {
-      status: newStatus,
-      decidedById: actor.id,
-      decidedAt: new Date(),
-      decisionNote: parsed.data.note?.trim() || null,
+      status: "RETURNED",
+      actualReturnAt,
+      returnLat: parseCoord(formData.get("lat")),
+      returnLng: parseCoord(formData.get("lng")),
     },
   });
+  if (upd.count !== 1) return { error: "This pass was already closed." };
 
-  if (upd.count !== 1) {
-    return { error: "This request was already decided by someone else." };
-  }
-
-  await writeAudit(actor, `exit.${newStatus.toLowerCase()}`, "ExitRequest", request.id, {
-    dormId: request.dormId,
+  await writeAudit(actor, "exit.return", "ExitRequest", active.id, {
+    dormId: actor.dormId,
   });
-  revalidatePath("/dashboard/dorm");
-  return { ok: `Request ${newStatus.toLowerCase()}.` };
+  revalidatePath("/dashboard/permission/exit");
+  return { ok: "Welcome back! Your return has been logged." };
 }

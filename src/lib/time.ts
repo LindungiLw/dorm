@@ -58,6 +58,13 @@ export function isWithinMealWindow(mealType: MealType, minutes: number): boolean
   return minutes >= w.startMin && minutes < w.endMin;
 }
 
+// Current campus-local time as a `datetime-local` input value ("YYYY-MM-DDTHH:mm").
+export function nowDatetimeLocal(d: Date = new Date()): string {
+  const p = campusParts(d);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${p.date}T${pad(p.hour)}:${pad(p.minute)}`;
+}
+
 export function mealLabel(t: string): string {
   switch (t) {
     case "BREAKFAST":

@@ -2,21 +2,23 @@
 
 import { useActionState } from "react";
 import {
-  createExitRequestAction,
+  submitLeavePassAction,
   type ExitState,
 } from "@/lib/domain/permissions-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Alert } from "@/components/ui";
+import { LocationField } from "@/components/LocationField";
 
-export function ExitRequestForm() {
+export function LeavePassForm() {
   const [state, action] = useActionState<ExitState, FormData>(
-    createExitRequestAction,
+    submitLeavePassAction,
     {},
   );
   return (
     <form action={action} className="space-y-3">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.ok && <Alert tone="success">{state.ok}</Alert>}
+
       <div>
         <label className="label" htmlFor="destination">
           Destination
@@ -29,6 +31,7 @@ export function ExitRequestForm() {
           required
         />
       </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="departureAt">
@@ -44,7 +47,7 @@ export function ExitRequestForm() {
         </div>
         <div>
           <label className="label" htmlFor="returnAt">
-            Expected return
+            Expected Return
           </label>
           <input
             id="returnAt"
@@ -55,7 +58,12 @@ export function ExitRequestForm() {
           />
         </div>
       </div>
-      <SubmitButton pendingText="Submitting…">Submit exit request</SubmitButton>
+
+      <LocationField label="Departure location (leaving the dorm)" />
+
+      <SubmitButton className="btn-primary" pendingText="Submitting…">
+        Submit
+      </SubmitButton>
     </form>
   );
 }
