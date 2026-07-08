@@ -12,9 +12,11 @@ function initialsOf(name: string): string {
 }
 
 function roleLabel(actor: Actor): string {
+  if (hasRole(actor, "ROOT")) return "Root";
   if (hasRole(actor, "ACADEMIC_ADMIN")) return "Academic Admin";
   if (hasRole(actor, "DORMITORY_ADMIN")) return "Dorm Admin";
   if (hasRole(actor, "CAFETERIA_ADMIN")) return "Cafeteria Admin";
+  if (hasRole(actor, "MARKET_ADMIN")) return "Market Admin";
   return actor.memberType === "FACULTY" ? "Faculty" : "Student";
 }
 

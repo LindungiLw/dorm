@@ -8,6 +8,10 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 const ALLOWED_DOMAIN = "jiu.ac";
 
+// Super-admin (ROOT) accounts — the only accounts that may grant/revoke the module
+// admin roles. Kept in code (not the DB) so root can never be revoked by accident.
+const ROOT_EMAILS = ["rahma23@jiu.ac"];
+
 // Google only appears once real OAuth credentials are provided, so the app still runs
 // (with credentials login) before you fill in the keys from Google Cloud Console.
 export const isGoogleConfigured = Boolean(
@@ -121,13 +125,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (existing) {
           if (existing.status !== "ACTIVE") {
             console.warn(`[auth] denied: ${email} is ${existing.status}, not ACTIVE`);
+            return false;
           }
-          return existing.status === "ACTIVE";
+          // Self-heal: the designated root account always keeps the ROOT role, even
+          // if it was first provisioned (or seeded) as a plain student.
+          if (ROOT_EMAILS.includes(email)) {
+            const hasRoot = await prisma.roleAssignment.findFirst({
+              where: { memberId: existing.id, role: "ROOT" },
+            });
+            if (!hasRoot) {
+              await prisma.roleAssignment.create({
+                data: { memberId: existing.id, role: "ROOT" },
+              });
+              console.info(`[auth] ensured ROOT role for ${email}`);
+            }
+          }
+          return true;
         }
 
-        // 3) First campus login → auto-provision a least-privilege STUDENT.
-        //    (Stands in for the SIS/directory sync: with a real directory you would
-        //    instead resolve NIM + enrollment status and reject non-roster accounts.)
+        // 3) First campus login → auto-provision. Root emails get ROOT; everyone else
+        //    a least-privilege STUDENT. (Stands in for the SIS/directory sync: with a
+        //    real directory you would resolve NIM + enrollment and reject non-roster.)
+        const isRoot = ROOT_EMAILS.includes(email);
         try {
           await prisma.member.create({
             data: {
@@ -138,10 +157,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               status: "ACTIVE",
               dormId: "DORM-A",
               passwordHash: await hashPassword(randomUUID()), // unusable — SSO only
-              roleAssignments: { create: [{ role: "STUDENT" }] },
+              roleAssignments: { create: [{ role: isRoot ? "ROOT" : "STUDENT" }] },
             },
           });
-          console.info(`[auth] provisioned new campus member — ${email}`);
+          console.info(
+            `[auth] provisioned new campus member — ${email}${isRoot ? " (ROOT)" : ""}`,
+          );
         } catch {
           // Concurrent first-login race — the unique(email) constraint means the other
           // request already created it. Idempotent: fall through and allow sign-in.

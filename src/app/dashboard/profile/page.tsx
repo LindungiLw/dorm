@@ -13,9 +13,11 @@ function initialsOf(name: string): string {
 }
 
 function roleLabelOf(roles: string[], memberType: string): string {
+  if (roles.includes("ROOT")) return "Root";
   if (roles.includes("ACADEMIC_ADMIN")) return "Academic Admin";
   if (roles.includes("DORMITORY_ADMIN")) return "Dorm Admin";
   if (roles.includes("CAFETERIA_ADMIN")) return "Cafeteria Admin";
+  if (roles.includes("MARKET_ADMIN")) return "Market Admin";
   return memberType === "FACULTY" ? "Faculty" : "Student";
 }
 

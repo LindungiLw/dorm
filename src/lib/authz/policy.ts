@@ -13,7 +13,9 @@ export type Role =
   | "FACULTY"
   | "CAFETERIA_ADMIN"
   | "DORMITORY_ADMIN"
-  | "ACADEMIC_ADMIN";
+  | "ACADEMIC_ADMIN"
+  | "MARKET_ADMIN"
+  | "ROOT";
 
 export type RoleGrant = {
   role: Role;
@@ -44,6 +46,8 @@ export type Action =
   | "cafeteria:manageMenu"
   | "cafeteria:manageAllergens"
   | "cafeteria:checkin"
+  | "market:manage"
+  | "admin:grantRoles"
   | "reports:view";
 
 // The concrete target of an authorization check.
@@ -116,6 +120,13 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
     case "cafeteria:checkin":
       return hasRole(actor, "CAFETERIA_ADMIN");
 
+    case "market:manage":
+      return hasRole(actor, "MARKET_ADMIN");
+
+    // Only ROOT (super-admin) may grant/revoke the module-admin roles.
+    case "admin:grantRoles":
+      return hasRole(actor, "ROOT");
+
     case "reports:view":
       return hasRole(actor, "ACADEMIC_ADMIN");
 
@@ -145,8 +156,10 @@ export function homePathFor(_actor: Actor): string {
 
 // The admin dashboard a given actor can reach (surfaced as the sidebar's admin icon).
 export function adminHomeFor(actor: Actor): string | null {
+  if (hasRole(actor, "ROOT")) return "/dashboard/root";
   if (hasRole(actor, "ACADEMIC_ADMIN")) return "/dashboard/academic";
   if (hasRole(actor, "DORMITORY_ADMIN")) return "/dashboard/dorm";
   if (hasRole(actor, "CAFETERIA_ADMIN")) return "/dashboard/cafeteria";
+  if (hasRole(actor, "MARKET_ADMIN")) return "/dashboard/market/sell";
   return null;
 }
