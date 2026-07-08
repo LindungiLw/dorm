@@ -159,6 +159,21 @@ model AllergenEntry {
   updatedAt DateTime @updatedAt
 }
 
+// A marketplace product listing. Facilitator-only: `price` is a label in whole Rupiah;
+// settlement is offline. Category is one of ELECTRONICS | FASHION | STATIONERY | FOOD_BEVERAGE.
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Int // whole Rupiah (integer money, per the plan)
+  category    String
+  emoji       String? // placeholder visual until photo storage exists
+  sellerId    String? // owner (member) — optional for seeded demo items
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+}
+
 // Append-only audit trail for privileged / value-affecting actions.
 model AuditLog {
   id         String   @id @default(cuid())
