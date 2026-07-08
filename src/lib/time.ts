@@ -78,6 +78,17 @@ export function mealLabel(t: string): string {
   }
 }
 
+// Clock time only ("HH:MM"), anchored to campus time (WIB) regardless of device tz.
+export function formatClock(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleTimeString("en-GB", {
+    timeZone: CAMPUS_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 export function formatDateTime(d: Date | string): string {
   const date = typeof d === "string" ? new Date(d) : d;
   return date.toLocaleString("en-GB", {

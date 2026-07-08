@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { selfCheckInAction, type CheckinState } from "@/lib/domain/checkin-actions";
 import { Alert } from "@/components/ui";
-import { MEAL_WINDOWS, mealLabel, type MealType } from "@/lib/time";
+import { MEAL_WINDOWS, mealLabel, formatClock, type MealType } from "@/lib/time";
 
 export function SelfCheckinCard({
   name,
@@ -13,6 +13,7 @@ export function SelfCheckinCard({
   initials,
   menuByMeal,
   redeemed,
+  redeemedAt,
   initialSession,
 }: {
   name: string;
@@ -22,6 +23,7 @@ export function SelfCheckinCard({
   initials: string;
   menuByMeal: Record<string, string>;
   redeemed: Record<string, boolean>;
+  redeemedAt: Record<string, string>;
   initialSession: MealType;
 }) {
   const [state, action, pending] = useActionState<CheckinState, FormData>(
@@ -46,6 +48,52 @@ export function SelfCheckinCard({
   const checkedIn = redeemed[session] || !!state.ok;
   const enabled = inWindow && !checkedIn && !pending;
   const menuLabel = menuByMeal[session]?.trim() || "Regular";
+
+  // ── Success state: replace the whole card with a clean, centered confirmation.
+  // The time is the server-recorded redemption moment (WIB), never the device clock.
+  if (checkedIn) {
+    const checkedAt = state.at ?? redeemedAt[session] ?? null;
+    const clock = checkedAt ? formatClock(checkedAt) : formatClock(now ?? new Date());
+    return (
+      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm">
+        <div className="flex flex-col items-center px-6 py-10 text-center">
+          {/* Big green check */}
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-11 w-11 text-emerald-600"
+              aria-hidden
+            >
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
+
+          {/* Confirmation text */}
+          <h2 className="mt-5 text-2xl font-bold text-navy-800">
+            Check-In Successful!
+          </h2>
+          <p className="mt-1 text-navy-500">Enjoy Your Meal.</p>
+
+          {/* Validation log — proof for cafeteria staff */}
+          <dl className="mt-6 w-full max-w-xs space-y-1 border-t border-navy-100 pt-5 text-sm">
+            <div className="flex justify-center gap-1">
+              <dt className="text-navy-400">Menu Type:</dt>
+              <dd className="font-semibold text-navy-700">Regular Menu</dd>
+            </div>
+            <div className="flex justify-center gap-1">
+              <dt className="text-navy-400">Time:</dt>
+              <dd className="font-semibold text-navy-700">{clock} WIB</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm">
@@ -99,22 +147,16 @@ export function SelfCheckinCard({
 
         {/* Primary action — centered */}
         <div className="mt-5">
-          {checkedIn ? (
-            <div className="rounded-xl bg-emerald-50 py-4 text-center text-lg font-bold text-emerald-700">
-              ✓ Checked in for {mealLabel(session)}
-            </div>
-          ) : (
-            <form action={action}>
-              <button
-                type="submit"
-                disabled={!enabled}
-                className="w-full rounded-xl bg-gold py-4 text-lg font-bold tracking-wide text-navy-900 shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-navy-100 disabled:text-navy-400"
-              >
-                {pending ? "Checking in…" : "[ CHECK-IN ]"}
-              </button>
-            </form>
-          )}
-          {!checkedIn && !inWindow && (
+          <form action={action}>
+            <button
+              type="submit"
+              disabled={!enabled}
+              className="w-full rounded-xl bg-gold py-4 text-lg font-bold tracking-wide text-navy-900 shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-navy-100 disabled:text-navy-400"
+            >
+              {pending ? "Checking in…" : "[ CHECK-IN ]"}
+            </button>
+          </form>
+          {!inWindow && (
             <p className="mt-2 text-center text-xs text-navy-400">
               Check-in opens {w.start}–{w.end}.
             </p>

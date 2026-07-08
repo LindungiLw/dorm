@@ -16,7 +16,7 @@ import {
   isWithinMealWindow,
 } from "@/lib/time";
 
-export type CheckinState = { error?: string; ok?: string };
+export type CheckinState = { error?: string; ok?: string; at?: string };
 
 const MEALS = new Set<string>(MEAL_TYPES);
 
@@ -141,12 +141,13 @@ export async function selfCheckInAction(
   });
 
   const counter = await prisma.counter.findFirst();
+  const redeemedAt = new Date();
 
   try {
     await prisma.$transaction(async (tx) => {
       const upd = await tx.mealCoupon.updateMany({
         where: { id: coupon.id, status: { in: ["ISSUED", "ACTIVE"] } },
-        data: { status: "REDEEMED", redeemedAt: new Date() },
+        data: { status: "REDEEMED", redeemedAt },
       });
       if (upd.count !== 1) throw new Error("NOT_REDEEMABLE");
       await tx.redemption.create({
@@ -170,5 +171,8 @@ export async function selfCheckInAction(
     mealType,
   });
   revalidatePath("/dashboard/cafeteria/checkin");
-  return { ok: `✅ Checked in for ${mealLabel(mealType)}. Enjoy your meal!` };
+  return {
+    ok: `✅ Checked in for ${mealLabel(mealType)}. Enjoy your meal!`,
+    at: redeemedAt.toISOString(),
+  };
 }

@@ -32,13 +32,19 @@ export default async function CheckinPage() {
     }),
     prisma.mealCoupon.findMany({
       where: { memberId: actor.id, mealDate: today },
-      select: { mealType: true, status: true },
+      select: { mealType: true, status: true, redeemedAt: true },
     }),
     getMenuForDates([today]),
   ]);
 
   const redeemed: Record<string, boolean> = {};
-  for (const c of coupons) redeemed[c.mealType] = c.status === "REDEEMED";
+  const redeemedAt: Record<string, string> = {};
+  for (const c of coupons) {
+    redeemed[c.mealType] = c.status === "REDEEMED";
+    if (c.status === "REDEEMED" && c.redeemedAt) {
+      redeemedAt[c.mealType] = c.redeemedAt.toISOString();
+    }
+  }
 
   const day = menuMap[today] ?? {};
   const menuByMeal: Record<string, string> = {
@@ -58,6 +64,7 @@ export default async function CheckinPage() {
         initials={initialsOf(actor.fullName)}
         menuByMeal={menuByMeal}
         redeemed={redeemed}
+        redeemedAt={redeemedAt}
         initialSession={currentMealType()}
       />
     </div>
