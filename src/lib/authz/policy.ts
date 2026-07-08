@@ -42,6 +42,7 @@ export type Action =
   | "exit:listDorm"
   | "exit:decide"
   | "cafeteria:manageMenu"
+  | "cafeteria:manageAllergens"
   | "cafeteria:checkin"
   | "reports:view";
 
@@ -109,8 +110,9 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
         scopesFor(actor, "DORMITORY_ADMIN").includes(resource.dormId)
       );
 
-    // Cafeteria staff station: manage the menu and check students in at the counter.
+    // Cafeteria staff: manage the menu / allergen list and check students in.
     case "cafeteria:manageMenu":
+    case "cafeteria:manageAllergens":
     case "cafeteria:checkin":
       return hasRole(actor, "CAFETERIA_ADMIN");
 

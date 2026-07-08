@@ -53,6 +53,16 @@ export function GaugeIcon() {
 }
 
 /* Sub-item icons */
+function AllergyIcon() {
+  // Allergen warning triangle.
+  return (
+    <svg {...ip} aria-hidden>
+      <path d="M10.3 3.7 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
 function UtensilsIcon() {
   return (
     <svg {...ip} aria-hidden>
@@ -132,9 +142,10 @@ export const MODULES: ModuleDef[] = [
     key: "cafeteria",
     label: "Cafetaria",
     base: "/dashboard/cafeteria",
-    primary: "/dashboard/cafeteria/menu",
+    primary: "/dashboard/cafeteria/allergy",
     icon: <QrIcon />,
     sub: [
+      { label: "Allergy", href: "/dashboard/cafeteria/allergy", icon: <AllergyIcon /> },
       { label: "Menu", href: "/dashboard/cafeteria/menu", icon: <UtensilsIcon /> },
       { label: "Check-in", href: "/dashboard/cafeteria/checkin", icon: <ScanIcon /> },
       { label: "Pengajuan", href: "/dashboard/cafeteria/pengajuan", icon: <DocIcon /> },

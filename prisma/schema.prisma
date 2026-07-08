@@ -146,6 +146,17 @@ model CafeteriaMenu {
   @@index([menuDate])
 }
 
+// The cafeteria's food-allergen list: each dish and the allergens it contains. Maintained
+// by cafeteria staff, read by everyone so members know what to avoid. Distinct from
+// Member.allergyInfo (a member's OWN allergies).
+model AllergenEntry {
+  id        String   @id @default(cuid())
+  food      String // dish / food name
+  allergens String // allergens it contains, e.g. "Peanuts, Shellfish, Egg"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Append-only audit trail for privileged / value-affecting actions.
 model AuditLog {
   id         String   @id @default(cuid())
