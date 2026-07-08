@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply antialiased;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-navy-100 bg-white p-5 shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-navy-700 text-white hover:bg-navy-800;
+  }
+  .btn-gold {
+    @apply btn bg-gold text-navy-900 hover:bg-gold-600;
+  }
+  .btn-outline {
+    @apply btn border border-navy-200 bg-white text-navy-700 hover:bg-navy-50;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  .input {
+    @apply w-full rounded-lg border border-navy-200 bg-white px-3 py-2 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-navy-700;
+  }
+}
+
+/* Welcome splash animations */
+@keyframes splashIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes splashBar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+.animate-splash-in {
+  animation: splashIn 500ms ease-out both;
+}
+.animate-splash-bar {
+  animation: splashBar 1800ms linear forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-in {
+    animation: none;
+  }
+  .animate-splash-bar {
+    animation: splashBar 400ms linear forwards;
+  }
+}

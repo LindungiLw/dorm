@@ -1,0 +1,158 @@
+// JIUnity — data model for the foundation slice.
+//
+// NOTE ON THE DATASTORE: SQLite is used here for a zero-setup runnable dev experience.
+// The production target is PostgreSQL behind a transaction-mode connection pooler.
+// Correctness invariants that MUST live in the datastore (per the architecture plan)
+// are expressed as @@unique constraints below — e.g. one active coupon per (member,
+// meal window) and exactly-once redemption via a unique ledger row. A few Postgres-only
+// invariants noted in the plan (range-overlap EXCLUSION constraints for room bookings)
+// are out of scope for this slice.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// The generalized directory-synced principal. In production, identity fields
+// (fullName, campusId, email, memberType, status, dormId) are a READ-ONLY projection
+// synced from the campus SIS/directory; `allergyInfo` is JIUnity-owned. Here they are
+// seeded locally. `passwordHash` stands in for the SSO credential until Google SSO is wired.
+model Member {
+  id           String   @id @default(cuid())
+  memberType   String // STUDENT | FACULTY
+  fullName     String
+  campusId     String   @unique // NIM (students) or staff ID (faculty)
+  email        String   @unique
+  status       String   @default("ACTIVE") // ACTIVE | SUSPENDED | INACTIVE
+  allergyInfo  String? // JIUnity-owned, sensitive
+  dormId       String? // org-unit scope for dorm-scoped features
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roleAssignments RoleAssignment[]
+  sessions        Session[]
+  coupons         MealCoupon[]
+  exitRequests    ExitRequest[]
+
+  @@index([dormId])
+}
+
+// Many-to-many role assignments (a person may hold several roles), each optionally
+// scoped to an org unit (dorm / cafeteria outlet). Buyer/seller are NOT roles.
+model RoleAssignment {
+  id        String  @id @default(cuid())
+  memberId  String
+  role      String // STUDENT | FACULTY | CAFETERIA_ADMIN | DORMITORY_ADMIN | ACADEMIC_ADMIN
+  scopeType String? // DORM | OUTLET | null (campus-wide)
+  scopeId   String?
+  member    Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, role, scopeId])
+  @@index([memberId])
+}
+
+// Stateful, revocable sessions. The cookie holds an opaque token; only its hash is
+// stored. Revocation (suspend / role change / logout) sets revokedAt so it stops
+// working on the next request — the property long-lived stateless JWTs can't give us.
+model Session {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  memberId  String
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([memberId])
+}
+
+// A cafeteria counter/outlet. `secret` seeds the rotating presence-anchor code
+// (a TOTP-style code that changes every 30s and is displayed AT the counter), so a
+// screenshot is stale within seconds and redemption proves physical presence.
+model Counter {
+  id     String @id @default(cuid())
+  name   String
+  outlet String
+  secret String
+}
+
+// A meal entitlement for one (member, date, meal window). The @@unique enforces
+// "at most one coupon per member per meal window" — a datastore-level invariant.
+model MealCoupon {
+  id          String    @id @default(cuid())
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  mealDate    String // YYYY-MM-DD (server-authoritative)
+  mealType    String // BREAKFAST | LUNCH | DINNER
+  status      String    @default("ISSUED") // ISSUED | ACTIVE | REDEEMED | EXPIRED
+  activatedAt DateTime?
+  redeemedAt  DateTime?
+  redemption  Redemption?
+
+  @@unique([memberId, mealDate, mealType])
+  @@index([memberId, mealDate])
+}
+
+// Append-only redemption ledger. The @@unique on couponId is the exactly-once guard:
+// two concurrent scans can't both insert, so a coupon is redeemed at most once.
+model Redemption {
+  id         String     @id @default(cuid())
+  couponId   String     @unique
+  coupon     MealCoupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  memberId   String
+  counterId  String
+  counterName String
+  redeemedAt DateTime   @default(now())
+}
+
+// Exit-dorm permission request — the "reference workflow": student submits, a
+// dorm-scoped admin approves/rejects via a guarded one-way state transition.
+model ExitRequest {
+  id          String    @id @default(cuid())
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  dormId      String
+  destination String
+  departureAt DateTime
+  returnAt    DateTime
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  decidedById String?
+  decidedAt   DateTime?
+  decisionNote String?
+  createdAt   DateTime  @default(now())
+
+  @@index([dormId, status])
+  @@index([memberId])
+}
+
+// The cafeteria menu for a given (date, meal window). Owned/edited by cafeteria staff;
+// read by everyone. One row per (date, meal) via the @@unique.
+model CafeteriaMenu {
+  id        String   @id @default(cuid())
+  menuDate  String // YYYY-MM-DD (server-authoritative)
+  mealType  String // BREAKFAST | LUNCH | DINNER
+  items     String // free-text description of the food served
+  updatedAt DateTime @updatedAt
+
+  @@unique([menuDate, mealType])
+  @@index([menuDate])
+}
+
+// Append-only audit trail for privileged / value-affecting actions.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorName  String
+  action     String
+  targetType String
+  targetId   String
+  meta       String? // JSON string
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
