@@ -1,19 +1,22 @@
 // JIUnity — data model for the foundation slice.
 //
-// NOTE ON THE DATASTORE: SQLite is used here for a zero-setup runnable dev experience.
-// The production target is PostgreSQL behind a transaction-mode connection pooler.
+// NOTE ON THE DATASTORE: PostgreSQL. Serverless hosts (Vercel) have an ephemeral,
+// read-only filesystem, so SQLite files can't persist there — a hosted Postgres
+// (Neon / Vercel Postgres / Supabase) is required. Set DATABASE_URL to that connection
+// string both locally (.env) and on Vercel (Environment Variables). For serverless,
+// use the POOLED connection string at runtime; if `prisma db push` complains, use the
+// DIRECT (non-pooled) string for that one command.
+//
 // Correctness invariants that MUST live in the datastore (per the architecture plan)
 // are expressed as @@unique constraints below — e.g. one active coupon per (member,
-// meal window) and exactly-once redemption via a unique ledger row. A few Postgres-only
-// invariants noted in the plan (range-overlap EXCLUSION constraints for room bookings)
-// are out of scope for this slice.
+// meal window) and exactly-once redemption via a unique ledger row.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
