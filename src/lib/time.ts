@@ -1,22 +1,61 @@
 // Server-authoritative time helpers. Client clocks are never trusted for coupon
 // validity or meal windows (per the security review, S1 / C1.4).
+//
+// Times are anchored to the CAMPUS timezone (WIB / Asia/Jakarta) so windows and dates
+// are correct regardless of where the server runs (Vercel functions run in UTC/US).
+
+export const CAMPUS_TZ = "Asia/Jakarta";
 
 // The cafeteria serves lunch and dinner only.
 export const MEAL_TYPES = ["LUNCH", "DINNER"] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 
-export function todayStr(d: Date = new Date()): string {
-  // YYYY-MM-DD in the server's local zone (single-campus-timezone assumption).
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+// Operating window per meal (campus-local, minutes since midnight).
+export const MEAL_WINDOWS: Record<
+  MealType,
+  { start: string; end: string; startMin: number; endMin: number }
+> = {
+  LUNCH: { start: "12:00", end: "13:00", startMin: 12 * 60, endMin: 13 * 60 },
+  DINNER: { start: "18:00", end: "19:00", startMin: 18 * 60, endMin: 19 * 60 },
+};
+
+// Break a Date into campus-local (WIB) parts.
+function campusParts(d: Date): { date: string; hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: CAMPUS_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const v = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return {
+    date: `${v("year")}-${v("month")}-${v("day")}`,
+    hour: Number(v("hour")) % 24,
+    minute: Number(v("minute")),
+  };
 }
 
-// The meal window a given moment falls into (server-authoritative). Defaults the
-// check-in station to "the meal happening now": lunch until 15:00, then dinner.
+export function todayStr(d: Date = new Date()): string {
+  return campusParts(d).date;
+}
+
+// Campus-local minutes since midnight — used to gate the check-in window server-side.
+export function nowCampusMinutes(d: Date = new Date()): number {
+  const p = campusParts(d);
+  return p.hour * 60 + p.minute;
+}
+
+// The meal window a given moment falls into: lunch until 15:00 (campus time), then dinner.
 export function currentMealType(d: Date = new Date()): MealType {
-  return d.getHours() < 15 ? "LUNCH" : "DINNER";
+  return campusParts(d).hour < 15 ? "LUNCH" : "DINNER";
+}
+
+export function isWithinMealWindow(mealType: MealType, minutes: number): boolean {
+  const w = MEAL_WINDOWS[mealType];
+  return minutes >= w.startMin && minutes < w.endMin;
 }
 
 export function mealLabel(t: string): string {
@@ -35,6 +74,7 @@ export function mealLabel(t: string): string {
 export function formatDateTime(d: Date | string): string {
   const date = typeof d === "string" ? new Date(d) : d;
   return date.toLocaleString("en-GB", {
+    timeZone: CAMPUS_TZ,
     day: "2-digit",
     month: "short",
     year: "numeric",
