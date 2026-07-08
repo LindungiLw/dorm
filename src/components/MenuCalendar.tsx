@@ -8,9 +8,8 @@ import { MEAL_TYPES, mealLabel } from "@/lib/time";
 import type { MenuMap } from "@/lib/domain/menu";
 
 const MEAL_ICON: Record<string, string> = {
-  BREAKFAST: "🥐",
-  LUNCH: "🍛",
-  DINNER: "🍜",
+  LUNCH: "🍽️",
+  DINNER: "🍲",
 };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -25,7 +24,12 @@ const toDateStr = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad
 // Does a day have at least one meal set?
 function dayHasMenu(menu: MenuMap, date: string): boolean {
   const d = menu[date];
-  return !!d && Object.values(d).some((v) => v && v.trim().length > 0);
+  return (
+    !!d &&
+    Object.values(d).some(
+      (c) => c.items.trim().length > 0 || c.ingredients.trim().length > 0,
+    )
+  );
 }
 
 function prettyDate(date: string): string {
@@ -190,16 +194,29 @@ export function MenuCalendar({
           <form key={selected} action={action} className="mt-2 space-y-3">
             {state.error && <Alert tone="error">{state.error}</Alert>}
             {MEAL_TYPES.map((m) => (
-              <div key={m}>
-                <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-navy-500">
+              <div key={m} className="rounded-xl border border-navy-100 p-3">
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-navy-600">
                   <span aria-hidden>{MEAL_ICON[m]}</span> {mealLabel(m)}
+                </p>
+                <label className="mb-1 block text-[11px] font-medium text-navy-400">
+                  Dish
                 </label>
                 <textarea
                   name={`items__${selected}__${m}`}
-                  defaultValue={selDay[m] ?? ""}
+                  defaultValue={selDay[m]?.items ?? ""}
                   rows={2}
                   placeholder={`What's for ${mealLabel(m).toLowerCase()}?`}
-                  className="input min-h-[3rem] resize-y text-sm"
+                  className="input mb-2 min-h-[2.75rem] resize-y text-sm"
+                />
+                <label className="mb-1 block text-[11px] font-medium text-navy-400">
+                  Ingredients
+                </label>
+                <textarea
+                  name={`ingredients__${selected}__${m}`}
+                  defaultValue={selDay[m]?.ingredients ?? ""}
+                  rows={2}
+                  placeholder="e.g. rice, chicken, garlic, soy sauce"
+                  className="input min-h-[2.75rem] resize-y text-sm"
                 />
               </div>
             ))}
@@ -218,24 +235,35 @@ export function MenuCalendar({
           </form>
         ) : (
           <div className="mt-2 space-y-2">
-            {MEAL_TYPES.map((m) => (
-              <div
-                key={m}
-                className="flex gap-3 rounded-xl border border-navy-50 bg-navy-50/30 p-3"
-              >
-                <span className="text-xl" aria-hidden>
-                  {MEAL_ICON[m]}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">
-                    {mealLabel(m)}
-                  </p>
-                  <p className="mt-0.5 text-sm text-navy-800">
-                    {selDay[m] || <span className="text-navy-300">Not set yet</span>}
-                  </p>
+            {MEAL_TYPES.map((m) => {
+              const cell = selDay[m];
+              return (
+                <div
+                  key={m}
+                  className="flex gap-3 rounded-xl border border-navy-50 bg-navy-50/30 p-3"
+                >
+                  <span className="text-xl" aria-hidden>
+                    {MEAL_ICON[m]}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">
+                      {mealLabel(m)}
+                    </p>
+                    <p className="mt-0.5 text-sm text-navy-800">
+                      {cell?.items || (
+                        <span className="text-navy-300">Not set yet</span>
+                      )}
+                    </p>
+                    {cell?.ingredients && (
+                      <p className="mt-1 text-xs text-navy-500">
+                        <span className="font-medium text-navy-400">Ingredients:</span>{" "}
+                        {cell.ingredients}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

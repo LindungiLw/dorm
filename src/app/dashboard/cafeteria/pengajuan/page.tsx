@@ -7,7 +7,7 @@ export default function PengajuanPage() {
     <div>
       <ModuleSubnav tabs={CAFETERIA_TABS} />
       <PageHeader
-        title="Cafeteria Submission"
+        title="Cafeteria Feedback"
         subtitle="Send feedback or a food complaint"
         icon="📝"
       />

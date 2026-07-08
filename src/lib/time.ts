@@ -1,7 +1,8 @@
 // Server-authoritative time helpers. Client clocks are never trusted for coupon
 // validity or meal windows (per the security review, S1 / C1.4).
 
-export const MEAL_TYPES = ["BREAKFAST", "LUNCH", "DINNER"] as const;
+// The cafeteria serves lunch and dinner only.
+export const MEAL_TYPES = ["LUNCH", "DINNER"] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 
 export function todayStr(d: Date = new Date()): string {
@@ -12,13 +13,10 @@ export function todayStr(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
-// The meal window a given moment falls into (server-authoritative). Used to default the
-// check-in station to "the meal happening now": breakfast < 10:00, lunch < 15:00, else dinner.
+// The meal window a given moment falls into (server-authoritative). Defaults the
+// check-in station to "the meal happening now": lunch until 15:00, then dinner.
 export function currentMealType(d: Date = new Date()): MealType {
-  const h = d.getHours();
-  if (h < 10) return "BREAKFAST";
-  if (h < 15) return "LUNCH";
-  return "DINNER";
+  return d.getHours() < 15 ? "LUNCH" : "DINNER";
 }
 
 export function mealLabel(t: string): string {

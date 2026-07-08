@@ -12,29 +12,36 @@ export function weekDates(days = 7, from: Date = new Date()): string[] {
   return out;
 }
 
-export type MenuMap = Record<string, Record<string, string>>; // date -> mealType -> items
+export type MenuCell = { items: string; ingredients: string };
+export type MenuMap = Record<string, Record<string, MenuCell>>; // date -> mealType -> cell
 
-// Load every menu entry as a { date: { mealType: items } } map. The menu table is small
+function toCell(items: string, ingredients: string | null): MenuCell {
+  return { items, ingredients: ingredients ?? "" };
+}
+
+// Load every menu entry as a { date: { mealType: cell } } map. The menu table is small
 // and bounded, so the calendar can navigate any month without extra round-trips.
 export async function getAllMenu(): Promise<MenuMap> {
-  const rows = await prisma.cafeteriaMenu.findMany();
+  const rows = await prisma.cafeteriaMenu.findMany({
+    select: { menuDate: true, mealType: true, items: true, ingredients: true },
+  });
   const map: MenuMap = {};
   for (const r of rows) {
-    (map[r.menuDate] ??= {})[r.mealType] = r.items;
+    (map[r.menuDate] ??= {})[r.mealType] = toCell(r.items, r.ingredients);
   }
   return map;
 }
 
-// Load the menu for a set of dates into a { date: { mealType: items } } map. Missing
-// meals simply have no key (rendered as "not set yet").
+// Load the menu for a set of dates. Missing meals simply have no key.
 export async function getMenuForDates(dates: string[]): Promise<MenuMap> {
   const rows = await prisma.cafeteriaMenu.findMany({
     where: { menuDate: { in: dates } },
+    select: { menuDate: true, mealType: true, items: true, ingredients: true },
   });
   const map: MenuMap = {};
   for (const d of dates) map[d] = {};
   for (const r of rows) {
-    (map[r.menuDate] ??= {})[r.mealType] = r.items;
+    (map[r.menuDate] ??= {})[r.mealType] = toCell(r.items, r.ingredients);
   }
   return map;
 }

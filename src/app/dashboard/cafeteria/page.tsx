@@ -44,18 +44,26 @@ export default async function CafeteriaAdminPage() {
               </Link>
             </div>
             <ul className="divide-y divide-navy-50">
-              {MEAL_TYPES.map((m) => (
-                <li key={m} className="py-2">
-                  <p className="text-sm font-semibold text-navy-800">
-                    {mealLabel(m)}
-                  </p>
-                  <p className="text-sm text-navy-500">
-                    {todaysMenu[m] || (
-                      <span className="text-navy-300">Not set yet</span>
+              {MEAL_TYPES.map((m) => {
+                const cell = todaysMenu[m];
+                return (
+                  <li key={m} className="py-2">
+                    <p className="text-sm font-semibold text-navy-800">
+                      {mealLabel(m)}
+                    </p>
+                    <p className="text-sm text-navy-500">
+                      {cell?.items || (
+                        <span className="text-navy-300">Not set yet</span>
+                      )}
+                    </p>
+                    {cell?.ingredients && (
+                      <p className="text-xs text-navy-400">
+                        Ingredients: {cell.ingredients}
+                      </p>
                     )}
-                  </p>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </Card>
 

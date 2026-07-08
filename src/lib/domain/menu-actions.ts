@@ -11,9 +11,11 @@ export type MenuState = { error?: string; ok?: string };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MEALS = new Set<string>(MEAL_TYPES);
+const FIELD_RE = /^(items|ingredients)__(\d{4}-\d{2}-\d{2})__([A-Z]+)$/;
 
-// Save the whole editable week in one submit. The form carries one field per cell named
-// `items__<YYYY-MM-DD>__<MEALTYPE>`; each is upserted (or cleared if blank).
+// Save the whole editable menu in one submit. Each cell carries two fields:
+// `items__<date>__<MEAL>` (the dish) and `ingredients__<date>__<MEAL>`. A cell with
+// neither is cleared.
 export async function saveMenuAction(
   _prev: MenuState,
   formData: FormData,
@@ -26,28 +28,41 @@ export async function saveMenuAction(
     return { error: "Only cafeteria staff can edit the menu." };
   }
 
-  let changed = 0;
+  // Collect both fields per (date, meal) before writing.
+  const cells = new Map<string, { menuDate: string; mealType: string; items: string; ingredients: string }>();
   for (const [key, value] of formData.entries()) {
-    if (!key.startsWith("items__")) continue;
-    const [, menuDate, mealType] = key.split("__");
-    if (!menuDate || !DATE_RE.test(menuDate) || !MEALS.has(mealType)) continue;
+    const m = FIELD_RE.exec(key);
+    if (!m) continue;
+    const [, field, menuDate, mealType] = m;
+    if (!DATE_RE.test(menuDate) || !MEALS.has(mealType)) continue;
+    const k = `${menuDate}|${mealType}`;
+    const cell = cells.get(k) ?? { menuDate, mealType, items: "", ingredients: "" };
+    cell[field as "items" | "ingredients"] = String(value).trim().slice(0, 400);
+    cells.set(k, cell);
+  }
 
-    const items = String(value).trim().slice(0, 400);
-    if (items) {
+  for (const c of cells.values()) {
+    if (c.items || c.ingredients) {
       await prisma.cafeteriaMenu.upsert({
-        where: { menuDate_mealType: { menuDate, mealType } },
-        create: { menuDate, mealType, items },
-        update: { items },
+        where: { menuDate_mealType: { menuDate: c.menuDate, mealType: c.mealType } },
+        create: {
+          menuDate: c.menuDate,
+          mealType: c.mealType,
+          items: c.items,
+          ingredients: c.ingredients || null,
+        },
+        update: { items: c.items, ingredients: c.ingredients || null },
       });
     } else {
-      // Blank clears that meal for that day.
-      await prisma.cafeteriaMenu.deleteMany({ where: { menuDate, mealType } });
+      // Both blank clears that meal for that day.
+      await prisma.cafeteriaMenu.deleteMany({
+        where: { menuDate: c.menuDate, mealType: c.mealType },
+      });
     }
-    changed++;
   }
 
   await writeAudit(actor, "cafeteria.menu.update", "CafeteriaMenu", "week", {
-    cells: changed,
+    cells: cells.size,
   });
   revalidatePath("/dashboard/cafeteria/menu");
   return { ok: "Menu saved." };

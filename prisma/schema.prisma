@@ -137,11 +137,12 @@ model ExitRequest {
 // The cafeteria menu for a given (date, meal window). Owned/edited by cafeteria staff;
 // read by everyone. One row per (date, meal) via the @@unique.
 model CafeteriaMenu {
-  id        String   @id @default(cuid())
-  menuDate  String // YYYY-MM-DD (server-authoritative)
-  mealType  String // BREAKFAST | LUNCH | DINNER
-  items     String // free-text description of the food served
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  menuDate    String // YYYY-MM-DD (server-authoritative)
+  mealType    String // LUNCH | DINNER
+  items       String // the dish / food served
+  ingredients String? // ingredients that go into the dish
+  updatedAt   DateTime @updatedAt
 
   @@unique([menuDate, mealType])
   @@index([menuDate])

@@ -9,7 +9,7 @@ export const CAFETERIA_TABS: Tab[] = [
   { label: "Allergy", href: "/dashboard/cafeteria/allergy" },
   { label: "Menu", href: "/dashboard/cafeteria/menu" },
   { label: "Check-in", href: "/dashboard/cafeteria/checkin" },
-  { label: "Pengajuan", href: "/dashboard/cafeteria/pengajuan" },
+  { label: "Feedback", href: "/dashboard/cafeteria/pengajuan" },
 ];
 export const PERMISSION_TABS: Tab[] = [
   { label: "Izin Keluar Masuk", href: "/dashboard/permission/exit" },

@@ -148,7 +148,7 @@ export const MODULES: ModuleDef[] = [
       { label: "Allergy", href: "/dashboard/cafeteria/allergy", icon: <AllergyIcon /> },
       { label: "Menu", href: "/dashboard/cafeteria/menu", icon: <UtensilsIcon /> },
       { label: "Check-in", href: "/dashboard/cafeteria/checkin", icon: <ScanIcon /> },
-      { label: "Pengajuan", href: "/dashboard/cafeteria/pengajuan", icon: <DocIcon /> },
+      { label: "Feedback", href: "/dashboard/cafeteria/pengajuan", icon: <DocIcon /> },
     ],
   },
   {
