@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { MODULES, GaugeIcon } from "@/components/nav";
 
 // DESKTOP-ONLY floating capsule (left). On mobile, navigation is handled by the
-// bottom bar (main modules) + the sub-menu capsule (see BottomBar / SubMenuCapsule).
+// bottom-anchored MobileNav (module pill + the active module's sub-menu).
 export function Sidebar({
   initials,
   photoUrl = null,
