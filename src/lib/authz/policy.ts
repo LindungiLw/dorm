@@ -36,6 +36,8 @@ export type Actor = {
 export type Action =
   | "profile:read"
   | "profile:updateAllergy"
+  | "profile:updateIdentity"
+  | "profile:updatePhoto"
   | "coupon:view"
   | "coupon:activate"
   | "coupon:redeem"
@@ -73,7 +75,8 @@ export function scopesFor(actor: Actor, role: Role): (string | null)[] {
 // Meal entitlement is tied to the persona (student or faculty), not to a role — staff
 // eat too. Admin-only accounts in this seed are still FACULTY memberType.
 function isMealEntitled(actor: Actor): boolean {
-  return actor.memberType === "STUDENT" || actor.memberType === "FACULTY";
+  // Every campus member eats — student, lecturer, staff, or (legacy) faculty.
+  return ["STUDENT", "FACULTY", "LECTURER", "STAFF"].includes(actor.memberType);
 }
 
 export function can(actor: Actor, action: Action, resource: Resource = {}): boolean {
@@ -87,6 +90,8 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
     // --- Ownership-scoped member actions (act only on your own object) ---
     case "profile:read":
     case "profile:updateAllergy":
+    case "profile:updateIdentity":
+    case "profile:updatePhoto":
     case "coupon:view":
       return ownsResource;
 

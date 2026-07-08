@@ -92,9 +92,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ account, profile }) {
       if (account?.provider === "google") {
         const p = profile as
-          | { email?: string; email_verified?: boolean; name?: string }
+          | { email?: string; email_verified?: boolean; name?: string; picture?: string }
           | undefined;
         const email = (p?.email ?? "").toLowerCase();
+        const picture = typeof p?.picture === "string" ? p.picture : null;
 
         // 1) The email must be provider-verified and end with @jiu.ac.
         if (p?.email_verified === false) {
@@ -127,6 +128,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.warn(`[auth] denied: ${email} is ${existing.status}, not ACTIVE`);
             return false;
           }
+          // Keep the avatar synced with the Google account photo — unless the member
+          // uploaded their own (a data: URL), which always wins.
+          if (
+            picture &&
+            existing.photoUrl !== picture &&
+            (!existing.photoUrl || existing.photoUrl.startsWith("http"))
+          ) {
+            await prisma.member.update({
+              where: { id: existing.id },
+              data: { photoUrl: picture },
+            });
+          }
           // Self-heal: the designated root account always keeps the ROOT role, even
           // if it was first provisioned (or seeded) as a plain student.
           if (ROOT_EMAILS.includes(email)) {
@@ -156,6 +169,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               email,
               status: "ACTIVE",
               dormId: "DORM-A",
+              photoUrl: picture,
               passwordHash: await hashPassword(randomUUID()), // unusable — SSO only
               roleAssignments: { create: [{ role: isRoot ? "ROOT" : "STUDENT" }] },
             },
