@@ -11,7 +11,7 @@ export default async function CatalogPage() {
       <ModuleSubnav tabs={MARKET_TABS} />
       <PageHeader
         title="Marketplace"
-        subtitle="Student-to-student · settle offline"
+        subtitle="Student-to-student · pay with QRIS"
         icon="🛒"
       />
       <ProductCatalog products={products} />

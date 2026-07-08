@@ -8,6 +8,12 @@ export type Product = {
   price: number; // whole Rupiah
   category: string;
   emoji: string | null;
+  // Seller / payment info (present in the public catalog so checkout can show the
+  // right QRIS). Optional because seeded demo items have no seller.
+  sellerKey?: string | null; // groups cart items by seller at checkout
+  storeName?: string | null;
+  qrisNumber?: string | null;
+  qrisImage?: string | null; // data URL of the seller's QRIS code
 };
 
 export type Category = { value: string; label: string; emoji: string };

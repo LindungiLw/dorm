@@ -13,11 +13,22 @@ const CAT_EMOJI: Record<string, string> = Object.fromEntries(
 );
 const visual = (p: Product) => p.emoji || CAT_EMOJI[p.category] || "📦";
 
+type SellerGroup = {
+  key: string;
+  storeName: string;
+  qrisImage: string | null;
+  qrisNumber: string | null;
+  items: { p: Product; q: number }[];
+  subtotal: number;
+};
+
 export function ProductCatalog({ products }: { products: Product[] }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("ALL");
   const [selected, setSelected] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [loaded, setLoaded] = useState(false);
 
@@ -71,6 +82,43 @@ export function ProductCatalog({ products }: { products: Product[] }) {
     0,
   );
 
+  // Group the cart by seller — QRIS is per-merchant, so checkout shows one code each.
+  const groups: SellerGroup[] = useMemo(() => {
+    const m = new Map<string, SellerGroup>();
+    for (const [id, q] of Object.entries(cart)) {
+      const p = byId.get(id);
+      if (!p) continue;
+      const key = p.sellerKey ?? "__market__";
+      let g = m.get(key);
+      if (!g) {
+        g = {
+          key,
+          storeName: p.storeName ?? "JIUnity Marketplace",
+          qrisImage: p.qrisImage ?? null,
+          qrisNumber: p.qrisNumber ?? null,
+          items: [],
+          subtotal: 0,
+        };
+        m.set(key, g);
+      }
+      g.items.push({ p, q });
+      g.subtotal += p.price * q;
+    }
+    return [...m.values()];
+  }, [cart, byId]);
+
+  const openCheckout = () => {
+    setSelected(null);
+    setCartOpen(false);
+    setPaidAmount(null);
+    setCheckoutOpen(true);
+  };
+
+  const markPaid = () => {
+    setPaidAmount(cartTotal);
+    setCart({});
+  };
+
   return (
     <div>
       {/* Search + cart */}
@@ -88,19 +136,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
             aria-label="Search products"
           />
         </div>
-        <button
-          type="button"
-          onClick={() => setCartOpen(true)}
-          className="relative flex items-center gap-2 rounded-xl border border-navy-100 bg-white px-3 text-navy-700 transition hover:bg-navy-50"
-          aria-label="Open cart"
-        >
-          <CartIcon />
-          {cartCount > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-navy-900">
-              {cartCount}
-            </span>
-          )}
-        </button>
+        <CartButton count={cartCount} onClick={() => setCartOpen(true)} />
       </div>
 
       {/* Category chips */}
@@ -165,39 +201,53 @@ export function ProductCatalog({ products }: { products: Product[] }) {
         </div>
       )}
 
-      {/* Product detail */}
+      {/* Product detail — centered */}
       {selected && (
         <Overlay onClose={() => setSelected(null)}>
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-navy-50 text-5xl">
-              {visual(selected)}
-            </div>
+          <div className="flex justify-end">
             <CloseButton onClick={() => setSelected(null)} />
           </div>
-          <span className="inline-block rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-semibold text-navy-700">
-            {CATEGORY_LABEL[selected.category] ?? selected.category}
-          </span>
-          <h2 className="mt-2 text-lg font-bold text-navy-800">{selected.name}</h2>
-          <p className="text-xl font-bold text-navy-700">
-            {formatRupiah(selected.price)}
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-navy-500">
-            {selected.description}
-          </p>
-          <div className="mt-4 flex items-center gap-3">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-28 w-28 items-center justify-center rounded-2xl bg-navy-50 text-6xl">
+              {visual(selected)}
+            </div>
+            <span className="mt-3 inline-block rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-semibold text-navy-700">
+              {CATEGORY_LABEL[selected.category] ?? selected.category}
+            </span>
+            <h2 className="mt-2 text-xl font-bold text-navy-800">{selected.name}</h2>
+            <p className="mt-1 text-2xl font-bold text-navy-700">
+              {formatRupiah(selected.price)}
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-navy-500">
+              {selected.description}
+            </p>
+          </div>
+
+          {/* Add to cart + separate cart button (with count) */}
+          <div className="mt-5 flex items-center gap-3">
             <button
               type="button"
               onClick={() => add(selected.id)}
               className="btn-gold flex-1"
             >
-              Add to cart
+              {qty(selected.id) > 0
+                ? `Add to cart · ${qty(selected.id)}`
+                : "Add to cart"}
             </button>
-            {qty(selected.id) > 0 && (
-              <span className="text-sm font-semibold text-navy-600">
-                In cart: {qty(selected.id)}
-              </span>
-            )}
+            <CartButton count={cartCount} onClick={() => setCartOpen(true)} />
           </div>
+
+          {/* Checkout */}
+          <button
+            type="button"
+            onClick={() => {
+              if (qty(selected.id) === 0) add(selected.id);
+              openCheckout();
+            }}
+            className="btn-primary mt-3 w-full"
+          >
+            Checkout
+          </button>
         </Overlay>
       )}
 
@@ -248,14 +298,154 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                   {formatRupiah(cartTotal)}
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={openCheckout}
+                className="btn-gold mt-4 w-full"
+              >
+                Checkout
+              </button>
+            </>
+          )}
+        </Overlay>
+      )}
+
+      {/* Checkout — QRIS payment */}
+      {checkoutOpen && (
+        <Overlay onClose={() => setCheckoutOpen(false)}>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-navy-800">Checkout</h2>
+            <CloseButton onClick={() => setCheckoutOpen(false)} />
+          </div>
+
+          {paidAmount !== null ? (
+            <div className="flex flex-col items-center py-6 text-center">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-11 w-11 text-emerald-600"
+                  aria-hidden
+                >
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <h3 className="mt-5 text-xl font-bold text-navy-800">
+                Payment marked as paid
+              </h3>
+              <p className="mt-1 text-navy-500">
+                {formatRupiah(paidAmount)} · show this to the seller.
+              </p>
+              <button
+                type="button"
+                onClick={() => setCheckoutOpen(false)}
+                className="btn-primary mt-6 w-full"
+              >
+                Done
+              </button>
+            </div>
+          ) : cartCount === 0 ? (
+            <p className="py-6 text-center text-sm text-navy-400">
+              Your cart is empty.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {groups.map((g) => (
+                  <div
+                    key={g.key}
+                    className="rounded-2xl border border-navy-100 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-navy-800">{g.storeName}</p>
+                      <QrisBadge />
+                    </div>
+                    <ul className="mt-1 text-xs text-navy-400">
+                      {g.items.map(({ p, q }) => (
+                        <li key={p.id}>
+                          {p.name} × {q}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-3 flex flex-col items-center">
+                      {g.qrisImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={g.qrisImage}
+                          alt={`QRIS ${g.storeName}`}
+                          className="h-44 w-44 rounded-xl border border-navy-100 bg-white object-contain p-2"
+                        />
+                      ) : (
+                        <div className="flex h-44 w-44 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-navy-200 bg-navy-50 px-4 text-center text-xs text-navy-400">
+                          <span className="text-2xl">🏷️</span>
+                          Seller hasn&rsquo;t set up QRIS. Pay on pickup.
+                        </div>
+                      )}
+                      {g.qrisNumber && (
+                        <p className="mt-1 text-xs text-navy-400">
+                          ID: {g.qrisNumber}
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs text-navy-400">Scan to pay</p>
+                      <p className="text-lg font-bold text-navy-800">
+                        {formatRupiah(g.subtotal)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-navy-100 pt-3">
+                <span className="text-sm text-navy-500">Total</span>
+                <span className="text-lg font-bold text-navy-800">
+                  {formatRupiah(cartTotal)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={markPaid}
+                className="btn-gold mt-4 w-full"
+              >
+                I&rsquo;ve paid
+              </button>
               <p className="mt-2 text-center text-xs text-navy-400">
-                Payment settles offline — the marketplace is a facilitator only.
+                Scan the QRIS above with your bank / e-wallet app, then confirm.
               </p>
             </>
           )}
         </Overlay>
       )}
     </div>
+  );
+}
+
+function CartButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative flex shrink-0 items-center justify-center rounded-xl border border-navy-100 bg-white px-3 py-2 text-navy-700 transition hover:bg-navy-50"
+      aria-label={`Open cart${count > 0 ? ` (${count} items)` : ""}`}
+    >
+      <CartIcon />
+      {count > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-navy-900">
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function QrisBadge() {
+  return (
+    <span className="rounded-md bg-navy-800 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-white">
+      QRIS
+    </span>
   );
 }
 
