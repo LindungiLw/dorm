@@ -40,7 +40,7 @@ export function DashboardShell({
             adminHref={user.adminHref}
           />
           {/* Mobile: main modules in a bottom bar + the active module's sub-menu on the side */}
-          <BottomBar initials={user.initials} />
+          <BottomBar />
           <SubMenuCapsule />
         </>
       )}

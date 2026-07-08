@@ -6,7 +6,8 @@ import { MODULES } from "@/components/nav";
 
 // MOBILE-ONLY floating pill nav, anchored at the bottom. Same capsule look as the
 // desktop Sidebar (rounded-full, border, shadow, backdrop-blur) but horizontal.
-export function BottomBar({ initials }: { initials: string }) {
+// Shows the 3 main modules only — profile lives in the top header avatar.
+export function BottomBar() {
   const pathname = usePathname();
   const active = (m: string) => pathname.startsWith(m);
 
@@ -30,21 +31,6 @@ export function BottomBar({ initials }: { initials: string }) {
           </Link>
         );
       })}
-
-      <span className="mx-0.5 h-6 w-px bg-navy-100" />
-
-      <Link
-        href="/dashboard/profile"
-        aria-label="Profile"
-        title="Profile"
-        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ring-2 transition ${
-          pathname.startsWith("/dashboard/profile")
-            ? "bg-navy-800 ring-navy-800"
-            : "bg-navy-600 ring-transparent hover:ring-navy-200"
-        }`}
-      >
-        {initials}
-      </Link>
     </nav>
   );
 }
