@@ -93,12 +93,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = (p?.email ?? "").toLowerCase();
 
         // 1) The email must be provider-verified and end with @jiu.ac.
-        if (p?.email_verified === false) return false;
-        if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) return false;
+        if (p?.email_verified === false) {
+          console.warn(`[auth] denied: Google email not verified — ${email}`);
+          return false;
+        }
+        if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+          console.warn(
+            `[auth] denied: non-campus Google account — "${email}" (expected @${ALLOWED_DOMAIN}). ` +
+              `Likely a personal Gmail chosen on the device instead of the campus account.`,
+          );
+          return false;
+        }
 
-        // 2) Resolve the member. Existing members must be ACTIVE.
-        const existing = await prisma.member.findUnique({ where: { email } });
-        if (existing) return existing.status === "ACTIVE";
+        // 2) Resolve the member. Existing members must be ACTIVE. A DB failure here
+        //    (e.g. a Neon cold-start timeout) must NOT be reported as "wrong email":
+        //    log it and rethrow so it surfaces as a distinct, retryable server error.
+        let existing;
+        try {
+          existing = await prisma.member.findUnique({ where: { email } });
+        } catch (err) {
+          console.error(
+            `[auth] database unreachable during sign-in for ${email} — retryable (Neon cold start?)`,
+            err,
+          );
+          throw err;
+        }
+        if (existing) {
+          if (existing.status !== "ACTIVE") {
+            console.warn(`[auth] denied: ${email} is ${existing.status}, not ACTIVE`);
+          }
+          return existing.status === "ACTIVE";
+        }
 
         // 3) First campus login → auto-provision a least-privilege STUDENT.
         //    (Stands in for the SIS/directory sync: with a real directory you would
@@ -116,6 +141,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               roleAssignments: { create: [{ role: "STUDENT" }] },
             },
           });
+          console.info(`[auth] provisioned new campus member — ${email}`);
         } catch {
           // Concurrent first-login race — the unique(email) constraint means the other
           // request already created it. Idempotent: fall through and allow sign-in.

@@ -7,10 +7,16 @@ import { homePathFor } from "@/lib/authz/policy";
 import { isGoogleConfigured } from "@/auth";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  AccessDenied: "Access Denied: Please use your JIU campus email.",
-  Configuration: "Sign-in is not configured correctly. Contact an administrator.",
+  AccessDenied:
+    "Access Denied — sign in with your @jiu.ac campus Google account (not a personal Gmail). On a phone, tap your JIU account in the chooser.",
+  Configuration:
+    "Sign-in hit a server error (the database may be waking up). Please wait a moment and try again — if it keeps failing, contact an administrator.",
   Verification: "This sign-in link is invalid or has expired.",
   CredentialsSignin: "Invalid credentials, or this account is not active.",
+  Callback:
+    "Sign-in was interrupted. Open the app in Chrome or Safari directly (not inside another app's in-app browser) and try again.",
+  OAuthCallback:
+    "Sign-in was interrupted. Open the app in Chrome or Safari directly (not inside another app's in-app browser) and try again.",
 };
 
 export default async function LoginPage({
