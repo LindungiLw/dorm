@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
+import { SubMenuCapsule } from "@/components/SubMenuCapsule";
 
 export type ShellUser = {
   fullName: string;
@@ -40,12 +41,13 @@ export function DashboardShell({
             isAdmin={user.isAdmin}
             adminHref={user.adminHref}
           />
-          {/* Mobile: one bottom-anchored nav — module pill + the active module's sub-menu */}
+          {/* Mobile: bottom module pill + the active module's icon sub-menu on the side */}
           <MobileNav />
+          <SubMenuCapsule />
         </>
       )}
 
-      <header className="border-b border-navy-100 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-navy-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Logo />
           <Link
@@ -80,7 +82,7 @@ export function DashboardShell({
       <main
         className={`mx-auto max-w-5xl px-6 py-8 ${
           showSidebar
-            ? "pb-[calc(8.75rem+env(safe-area-inset-bottom))] md:pb-10"
+            ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-10"
             : ""
         }`}
       >
