@@ -37,11 +37,7 @@ export default async function ExitPermissionPage() {
       {/* While out, poll so the card flips the moment security marks the return. */}
       {isOut && <AutoRefresh seconds={15} />}
       <ModuleSubnav tabs={PERMISSION_TABS} />
-      <PageHeader
-        title="Exit Permissions"
-        subtitle={`Dormitory ${actor.dormId ?? "—"}`}
-        icon="🚪"
-      />
+      <PageHeader title="Exit Permissions" icon="🚪" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Leave Pass */}

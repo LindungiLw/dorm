@@ -7,13 +7,20 @@ import {
 } from "@/lib/domain/permissions-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Alert } from "@/components/ui";
-import { LocationField } from "@/components/LocationField";
+import { LocationField, type Coords } from "@/components/LocationField";
+
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
+// Read the WIB wall-clock via UTC getters on a +7h-shifted Date, so the prefill matches the
+// server's WIB interpretation regardless of the device timezone.
 function fmtDate(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+function fmtTime(d: Date): string {
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 export function LeavePassForm() {
@@ -25,10 +32,17 @@ export function LeavePassForm() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [minDate, setMinDate] = useState("");
+  const [coords, setCoords] = useState<Coords | null>(null);
 
-  // Client-only: today's date as the earliest selectable day (avoids a hydration mismatch).
+  // Client-only defaults (avoids a hydration mismatch). The expected return defaults to about
+  // two hours out: always a valid future time the student can adjust, never the current
+  // instant (which the server rejects as "not in the future").
   useEffect(() => {
-    setMinDate(fmtDate(new Date()));
+    const wibNow = new Date(Date.now() + WIB_OFFSET_MS);
+    setMinDate(fmtDate(wibNow));
+    const wibReturn = new Date(wibNow.getTime() + 2 * 60 * 60 * 1000);
+    setDate(fmtDate(wibReturn));
+    setTime(fmtTime(wibReturn));
   }, []);
 
   // The single value the server parses (WIB wall-clock), assembled from the two fields.
@@ -80,12 +94,18 @@ export function LeavePassForm() {
         </p>
       </div>
 
-      <LocationField label="Your location now" />
+      <LocationField
+        label="Your location now"
+        required
+        value={coords}
+        onChange={setCoords}
+      />
 
       <div className="flex justify-center pt-1 sm:justify-start">
         <SubmitButton
-          className="btn-primary w-full sm:w-auto sm:px-8"
+          className="btn-primary w-full sm:w-auto sm:px-8 disabled:cursor-not-allowed disabled:opacity-60"
           pendingText="Submitting…"
+          disabled={!coords}
         >
           Submit
         </SubmitButton>

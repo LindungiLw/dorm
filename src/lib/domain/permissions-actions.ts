@@ -53,6 +53,14 @@ export async function submitLeavePassAction(
     return { error: "Your expected return must be in the future." };
   }
 
+  // A current location is mandatory — the dorm needs to know where the student set off.
+  // Latitude is bounded to ±90 (parseCoord only rules out ±180), longitude to ±180.
+  const lat = parseCoord(formData.get("lat"));
+  const lng = parseCoord(formData.get("lng"));
+  if (lat === null || lng === null || Math.abs(lat) > 90) {
+    return { error: "Please capture your current location before submitting." };
+  }
+
   // One active pass at a time — the dorm must mark you back before you leave again.
   const active = await prisma.exitRequest.findFirst({
     where: { memberId: actor.id, status: "OUT" },
@@ -72,8 +80,8 @@ export async function submitLeavePassAction(
       destination: parsed.data.destination,
       departureAt,
       returnAt,
-      departureLat: parseCoord(formData.get("lat")),
-      departureLng: parseCoord(formData.get("lng")),
+      departureLat: lat,
+      departureLng: lng,
       status: "OUT",
     },
   });

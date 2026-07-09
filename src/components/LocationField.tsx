@@ -3,10 +3,22 @@
 import { useState } from "react";
 import { MapPreview } from "@/components/MapPreview";
 
-// Captures a location point via the browser Geolocation API and carries it in hidden
-// `lat`/`lng` fields. Optional — the form still submits if the user declines.
-export function LocationField({ label }: { label: string }) {
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+export type Coords = { lat: number; lng: number };
+
+// Captures a location point via the browser Geolocation API. Controlled: the captured
+// point is carried in the parent via `onChange`, and mirrored into hidden `lat`/`lng`
+// fields for the server action. When `required`, the parent gates submit until it is set.
+export function LocationField({
+  label,
+  value,
+  onChange,
+  required = false,
+}: {
+  label: string;
+  value: Coords | null;
+  onChange: (c: Coords | null) => void;
+  required?: boolean;
+}) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
 
   function capture() {
@@ -17,7 +29,7 @@ export function LocationField({ label }: { label: string }) {
     setStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        onChange({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setStatus("idle");
       },
       () => setStatus("error"),
@@ -28,8 +40,8 @@ export function LocationField({ label }: { label: string }) {
   return (
     <div>
       <label className="label">{label}</label>
-      <input type="hidden" name="lat" value={coords?.lat ?? ""} readOnly />
-      <input type="hidden" name="lng" value={coords?.lng ?? ""} readOnly />
+      <input type="hidden" name="lat" value={value?.lat ?? ""} readOnly />
+      <input type="hidden" name="lng" value={value?.lng ?? ""} readOnly />
       <button
         type="button"
         onClick={capture}
@@ -39,21 +51,27 @@ export function LocationField({ label }: { label: string }) {
         <PinIcon />
         {status === "loading"
           ? "Getting location…"
-          : coords
-            ? "Update Location"
-            : "Current Location"}
+          : value
+            ? "Update location"
+            : "Current location"}
       </button>
-      {coords && (
+      {value ? (
         <>
-          <MapPreview lat={coords.lat} lng={coords.lng} className="mt-3" eager />
+          <MapPreview lat={value.lat} lng={value.lng} className="mt-3" eager />
           <p className="mt-1.5 text-xs font-medium text-emerald-600">
             Location captured. Submit to save it.
           </p>
         </>
+      ) : (
+        required && (
+          <p className="mt-1.5 text-xs text-navy-400">
+            Required to submit your leave pass.
+          </p>
+        )
       )}
       {status === "error" && (
         <p className="mt-1 text-xs text-amber-600">
-          Couldn&rsquo;t get your location. You can still submit without it.
+          Couldn&rsquo;t get your location. Please allow location access and try again.
         </p>
       )}
     </div>
