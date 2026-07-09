@@ -182,15 +182,32 @@ export function homePathFor(_actor: Actor): string {
   return "/dashboard";
 }
 
-// The admin dashboard a given actor can reach (surfaced as the sidebar's admin icon).
+export type AdminConsole = { key: string; label: string; href: string };
+
+// Every admin console the actor can reach, in priority order. Surfaced by the nav's admin
+// gauge: one console links straight to it, several open a small picker. Someone who
+// administers two features gets both here.
+export function adminConsolesFor(actor: Actor): AdminConsole[] {
+  const out: AdminConsole[] = [];
+  if (hasRole(actor, "ROOT"))
+    out.push({ key: "root", label: "Super Admin", href: "/dashboard/root" });
+  if (hasRole(actor, "ACADEMIC_ADMIN"))
+    out.push({ key: "academic", label: "Academic", href: "/dashboard/academic" });
+  if (hasRole(actor, "DORMITORY_ADMIN"))
+    out.push({ key: "dorm", label: "Dorm Access", href: "/dashboard/dorm" });
+  if (hasRole(actor, "CAFETERIA_ADMIN"))
+    out.push({ key: "cafeteria", label: "Cafeteria", href: "/dashboard/cafeteria" });
+  if (hasRole(actor, "MARKET_ADMIN"))
+    out.push({ key: "market", label: "Marketplace", href: "/dashboard/market/admin" });
+  if (hasRole(actor, "SECURITY"))
+    out.push({ key: "security", label: "Security", href: "/dashboard/security" });
+  return out;
+}
+
+// The single admin dashboard used where only one destination is needed (e.g. the kiosk
+// landing redirect). It is the highest-priority console the actor holds.
 export function adminHomeFor(actor: Actor): string | null {
-  if (hasRole(actor, "ROOT")) return "/dashboard/root";
-  if (hasRole(actor, "ACADEMIC_ADMIN")) return "/dashboard/academic";
-  if (hasRole(actor, "DORMITORY_ADMIN")) return "/dashboard/dorm";
-  if (hasRole(actor, "CAFETERIA_ADMIN")) return "/dashboard/cafeteria";
-  if (hasRole(actor, "MARKET_ADMIN")) return "/dashboard/market/admin";
-  if (hasRole(actor, "SECURITY")) return "/dashboard/security";
-  return null;
+  return adminConsolesFor(actor)[0]?.href ?? null;
 }
 
 // A security (satpam) account is a single-purpose kiosk: its only page is the gate

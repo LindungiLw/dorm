@@ -7,14 +7,14 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { SubMenuCapsule } from "@/components/SubMenuCapsule";
 import { logoutAction } from "@/lib/auth/actions";
+import type { AdminConsole } from "@/lib/authz/policy";
 
 export type ShellUser = {
   fullName: string;
   roleLabel: string;
   initials: string;
   photoUrl: string | null;
-  isAdmin: boolean;
-  adminHref?: string;
+  adminConsoles: AdminConsole[];
   isKiosk?: boolean;
 };
 
@@ -44,11 +44,10 @@ export function DashboardShell({
           <Sidebar
             initials={user.initials}
             photoUrl={user.photoUrl}
-            isAdmin={user.isAdmin}
-            adminHref={user.adminHref}
+            consoles={user.adminConsoles}
           />
           {/* Mobile: bottom module pill + the active module's icon sub-menu on the side */}
-          <MobileNav isAdmin={user.isAdmin} adminHref={user.adminHref} />
+          <MobileNav consoles={user.adminConsoles} />
           <SubMenuCapsule />
         </>
       )}

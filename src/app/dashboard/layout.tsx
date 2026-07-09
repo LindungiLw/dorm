@@ -3,7 +3,7 @@ import { DashboardShell, type ShellUser } from "@/components/DashboardShell";
 import { getCurrentActor } from "@/lib/auth/session";
 import {
   hasRole,
-  adminHomeFor,
+  adminConsolesFor,
   isSecurityKiosk,
   type Actor,
 } from "@/lib/authz/policy";
@@ -34,14 +34,12 @@ export default async function DashboardLayout({
   const actor = await getCurrentActor();
   if (!actor) redirect("/login");
 
-  const adminHref = adminHomeFor(actor);
   const user: ShellUser = {
     fullName: actor.fullName,
     roleLabel: roleLabel(actor),
     initials: initialsOf(actor.fullName),
     photoUrl: actor.photoUrl,
-    isAdmin: adminHref !== null,
-    adminHref: adminHref ?? undefined,
+    adminConsoles: adminConsolesFor(actor),
     isKiosk: isSecurityKiosk(actor),
   };
 

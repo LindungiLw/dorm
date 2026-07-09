@@ -2,20 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MODULES, GaugeIcon } from "@/components/nav";
+import { MODULES } from "@/components/nav";
+import { AdminGauge } from "@/components/AdminGauge";
+import type { AdminConsole } from "@/lib/authz/policy";
 
 // DESKTOP-ONLY floating capsule (left). On mobile, navigation is handled by the
 // bottom-anchored MobileNav (module pill + the active module's sub-menu).
 export function Sidebar({
   initials,
   photoUrl = null,
-  isAdmin = false,
-  adminHref,
+  consoles = [],
 }: {
   initials: string;
   photoUrl?: string | null;
-  isAdmin?: boolean;
-  adminHref?: string;
+  consoles?: AdminConsole[];
 }) {
   const pathname = usePathname();
   const active = (m: string) => pathname.startsWith(m);
@@ -58,20 +58,7 @@ export function Sidebar({
         </Link>
       ))}
 
-      {isAdmin && adminHref && (
-        <Link
-          href={adminHref}
-          aria-label="Admin"
-          title="Admin"
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
-            pathname === adminHref
-              ? "bg-navy-700 text-white"
-              : "text-navy-500 hover:bg-navy-50"
-          }`}
-        >
-          <GaugeIcon />
-        </Link>
-      )}
+      {consoles.length > 0 && <AdminGauge consoles={consoles} placement="right" />}
     </aside>
   );
 }
