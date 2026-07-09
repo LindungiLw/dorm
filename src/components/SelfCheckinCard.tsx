@@ -54,7 +54,11 @@ export function SelfCheckinCard({
 
   const checkedIn = redeemed[session] || !!state.ok;
   const enabled = inWindow && !checkedIn && !pending;
-  const menuLabel = menuByMeal[session]?.trim() || "Regular";
+  // The menu the cafeteria admin set for this session, split into individual dishes.
+  const menuItems = (menuByMeal[session] ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   // ── Success state: replace the whole card with a clean, centered confirmation.
   // The time is the server-recorded redemption moment (WIB), never the device clock.
@@ -89,8 +93,8 @@ export function SelfCheckinCard({
           {/* Validation log — proof for cafeteria staff */}
           <dl className="mt-6 w-full max-w-xs space-y-1 border-t border-navy-100 pt-5 text-sm">
             <div className="flex justify-center gap-1">
-              <dt className="text-navy-400">Menu Type:</dt>
-              <dd className="font-semibold text-navy-700">Regular Menu</dd>
+              <dt className="text-navy-400">Meal:</dt>
+              <dd className="font-semibold text-navy-700">{mealLabel(session)}</dd>
             </div>
             <div className="flex justify-center gap-1">
               <dt className="text-navy-400">Time:</dt>
@@ -137,12 +141,25 @@ export function SelfCheckinCard({
         {/* Divider */}
         <hr className="my-5 border-t border-navy-100" />
 
-        {/* Menu info — centered */}
-        <div className="text-center">
-          <p className="text-sm font-medium text-navy-400">Today&rsquo;s Menu</p>
-          <p className="mt-1 text-lg font-bold text-navy-800">
-            &gt; {menuLabel} &lt;
+        {/* Today's menu — pulled straight from what the cafeteria admin set */}
+        <div className="rounded-xl bg-navy-50 px-4 py-4 text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">
+            Today&rsquo;s {mealLabel(session)}
           </p>
+          {menuItems.length > 0 ? (
+            <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+              {menuItems.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-navy-700 shadow-sm"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-1.5 text-sm text-navy-400">Not set yet.</p>
+          )}
         </div>
 
         {/* Feedback */}
@@ -160,7 +177,7 @@ export function SelfCheckinCard({
               disabled={!enabled}
               className="w-full rounded-xl bg-gold py-4 text-lg font-bold tracking-wide text-navy-900 shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-navy-100 disabled:text-navy-400"
             >
-              {pending ? "Checking in…" : "[ CHECK-IN ]"}
+              {pending ? "Checking in…" : "Check in"}
             </button>
           </form>
           {!inWindow && (
