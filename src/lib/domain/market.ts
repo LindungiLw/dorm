@@ -34,19 +34,23 @@ export async function getProducts(): Promise<Product[]> {
     : [];
   const byMember = new Map(profiles.map((s) => [s.memberId, s]));
 
-  return products.map((p) => {
-    const s = p.sellerId ? byMember.get(p.sellerId) : null;
-    return {
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      category: p.category,
-      emoji: p.emoji,
-      sellerKey: p.sellerId ?? null,
-      storeName: s?.storeName ?? null,
-      qrisNumber: s?.qrisNumber ?? null,
-      qrisImage: s?.qrisImage ?? null,
-    };
-  });
+  return products
+    // Show seeded demo items (no seller) and products from currently-approved sellers only,
+    // so a revoked seller's listings drop out of the catalog.
+    .filter((p) => !p.sellerId || byMember.has(p.sellerId))
+    .map((p) => {
+      const s = p.sellerId ? byMember.get(p.sellerId) : null;
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        category: p.category,
+        emoji: p.emoji,
+        sellerKey: p.sellerId ?? null,
+        storeName: s?.storeName ?? null,
+        qrisNumber: s?.qrisNumber ?? null,
+        qrisImage: s?.qrisImage ?? null,
+      };
+    });
 }

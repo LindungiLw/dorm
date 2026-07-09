@@ -114,6 +114,42 @@ export async function decideSellerAction(
   return { ok: `Request ${parsed.data.decision.toLowerCase()}.` };
 }
 
+// ---- Market admin: revoke an approved seller's access -----------------------------
+const revokeSchema = z.object({ memberId: z.string().min(1) });
+
+export async function revokeSellerAction(
+  _prev: SellerState,
+  formData: FormData,
+): Promise<SellerState> {
+  const actor = await getCurrentActor();
+  if (!actor) return { error: "Your session has expired. Please sign in again." };
+  if (!can(actor, "market:manage")) {
+    return { error: "Only market admins can revoke seller access." };
+  }
+
+  const parsed = revokeSchema.safeParse({ memberId: formData.get("memberId") });
+  if (!parsed.success) return { error: "Invalid request." };
+
+  // Guarded transition: only an APPROVED seller can be revoked. Their listings drop out of
+  // the catalog (getProducts shows approved sellers only) and they can re-apply later.
+  const upd = await prisma.sellerProfile.updateMany({
+    where: { memberId: parsed.data.memberId, status: "APPROVED" },
+    data: {
+      status: "REJECTED",
+      decidedById: actor.id,
+      decidedAt: new Date(),
+      note: "Access revoked by admin.",
+    },
+  });
+  if (upd.count !== 1) return { error: "This seller is not active." };
+
+  await writeAudit(actor, "market.seller.revoke", "SellerProfile", parsed.data.memberId, {});
+  revalidatePath("/dashboard/market/admin");
+  revalidatePath("/dashboard/market/catalog");
+  revalidatePath("/dashboard/market/sell");
+  return { ok: "Seller access revoked." };
+}
+
 // ---- Seller: create / delete product listings ------------------------------------
 const productSchema = z.object({
   name: z.string().trim().min(2, "Enter a product name.").max(80),
