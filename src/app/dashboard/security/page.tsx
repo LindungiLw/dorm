@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole } from "@/lib/authz/policy";
-import { getOutRequests, getRecentReturns } from "@/lib/domain/permissions";
+import { getOutRequests } from "@/lib/domain/permissions";
 import { PageHeader, Card, StatusBadge } from "@/components/ui";
-import { formatDateTime, formatClock } from "@/lib/time";
+import { formatDateTime } from "@/lib/time";
 import { ReturnButton } from "@/components/ReturnButton";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { MapPreview } from "@/components/MapPreview";
@@ -17,10 +17,7 @@ export default async function SecurityMonitorPage() {
   // Security accounts only — everyone else is bounced home silently.
   if (!hasRole(actor, "SECURITY")) redirect("/dashboard");
 
-  const [out, returned] = await Promise.all([
-    getOutRequests(),
-    getRecentReturns(15),
-  ]);
+  const out = await getOutRequests();
 
   return (
     <div>
@@ -70,29 +67,6 @@ export default async function SecurityMonitorPage() {
             </Card>
           ))}
         </div>
-      )}
-
-      {returned.length > 0 && (
-        <>
-          <h2 className="mb-3 mt-8 font-semibold text-navy-800">Returned recently</h2>
-          <Card>
-            <ul className="divide-y divide-navy-50">
-              {returned.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between gap-2 py-2 text-sm"
-                >
-                  <span className="text-navy-700">
-                    {r.member.fullName} · {r.destination}
-                  </span>
-                  <span className="text-xs text-emerald-600">
-                    {r.actualReturnAt ? `back ${formatClock(r.actualReturnAt)} WIB` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </>
       )}
     </div>
   );

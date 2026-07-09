@@ -17,15 +17,8 @@ export default async function DormAdminPage() {
 
   const scopeIds = scopesFor(actor, "DORMITORY_ADMIN");
   const requests = await getDormRequests(scopeIds);
+  // A returned pass is deleted on return to keep the table lean, so this is only who is out.
   const out = requests.filter((r) => r.status === "OUT");
-  // Order the closed passes by when they actually came back (newest first), not by
-  // departure time — the base query sorts by departure.
-  const returned = requests
-    .filter((r) => r.status === "RETURNED")
-    .sort(
-      (a, b) =>
-        (b.actualReturnAt?.getTime() ?? 0) - (a.actualReturnAt?.getTime() ?? 0),
-    );
 
   return (
     <div>
@@ -72,29 +65,6 @@ export default async function DormAdminPage() {
             </Card>
           ))}
         </div>
-      )}
-
-      {returned.length > 0 && (
-        <>
-          <h2 className="mb-3 mt-8 font-semibold text-navy-800">Returned recently</h2>
-          <Card>
-            <ul className="divide-y divide-navy-50">
-              {returned.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between gap-2 py-2 text-sm"
-                >
-                  <span className="text-navy-700">
-                    {r.member.fullName} · {r.destination}
-                  </span>
-                  <span className="text-xs text-navy-400">
-                    {r.actualReturnAt ? `back ${formatDateTime(r.actualReturnAt)}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </>
       )}
     </div>
   );

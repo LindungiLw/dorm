@@ -98,7 +98,7 @@ export async function markReturnedAction(
 
   const req = await prisma.exitRequest.findUnique({
     where: { id },
-    select: { id: true, dormId: true, status: true },
+    select: { id: true, memberId: true, dormId: true, status: true },
   });
   if (!req) return { error: "Pass not found." };
 
@@ -107,17 +107,17 @@ export async function markReturnedAction(
     return { error: "Only dorm staff or security can mark a student returned." };
   }
 
-  // Guarded transition: close only while still OUT.
-  const upd = await prisma.exitRequest.updateMany({
+  // Guarded close: delete the pass only while still OUT so the ExitRequest table only
+  // ever holds students who are currently out (small + fast). We keep just a timestamp on
+  // the member so the student still sees "Back at campus".
+  const del = await prisma.exitRequest.deleteMany({
     where: { id: req.id, status: "OUT" },
-    data: {
-      status: "RETURNED",
-      actualReturnAt: new Date(),
-      decidedById: actor.id,
-      decidedAt: new Date(),
-    },
   });
-  if (upd.count !== 1) return { error: "This student is already marked returned." };
+  if (del.count !== 1) return { error: "This student is already marked returned." };
+  await prisma.member.update({
+    where: { id: req.memberId },
+    data: { lastReturnAt: new Date() },
+  });
 
   await writeAudit(actor, "exit.return.admin", "ExitRequest", req.id, {
     dormId: req.dormId,

@@ -34,6 +34,10 @@ model Member {
   allergyInfo  String? // JIUnity-owned, sensitive
   photoUrl     String? // profile photo, stored as a small data URL (JIUnity-owned)
   dormId       String? // org-unit scope for dorm-scoped features
+  // Last time the member was marked back at the dorm. The full ExitRequest is deleted on
+  // return to keep that table lean, so this stamp is what powers the student's
+  // "Back at campus" view.
+  lastReturnAt DateTime?
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

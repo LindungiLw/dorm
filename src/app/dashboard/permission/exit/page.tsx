@@ -1,4 +1,5 @@
 import { getCurrentActor } from "@/lib/auth/session";
+import { prisma } from "@/lib/db";
 import { getOwnExitRequests } from "@/lib/domain/permissions";
 import { PageHeader, Card, StatusBadge, Alert } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
@@ -25,10 +26,22 @@ export default async function ExitPermissionPage() {
     );
   }
 
-  const passes = await getOwnExitRequests(actor.id);
-  const latest = passes[0]; // newest first
+  const [passes, me] = await Promise.all([
+    getOwnExitRequests(actor.id),
+    prisma.member.findUnique({
+      where: { id: actor.id },
+      select: { lastReturnAt: true },
+    }),
+  ]);
+  const latest = passes[0]; // newest first (only active OUT passes remain)
   const isOut = latest?.status === "OUT";
-  const justReturned = latest?.status === "RETURNED";
+  // Returning deletes the pass and stamps lastReturnAt, so drive "Back at campus" from
+  // that stamp for a day after they get back.
+  const lastReturnAt = me?.lastReturnAt ?? null;
+  const justReturned =
+    !isOut &&
+    lastReturnAt != null &&
+    Date.now() - lastReturnAt.getTime() < 24 * 60 * 60 * 1000;
 
   return (
     <div>
@@ -64,9 +77,7 @@ export default async function ExitPermissionPage() {
                 <p className="font-semibold text-amber-800">Still outside</p>
               </div>
               <p className="mt-2 text-sm text-amber-700">
-                You are still outside. The <strong>security (satpam)</strong> or{" "}
-                <strong>dorm staff</strong> will mark you returned once you arrive back
-                at campus.
+                Please return to the satpam.
               </p>
               {latest?.destination && (
                 <p className="mt-2 text-xs text-amber-600">
@@ -92,9 +103,9 @@ export default async function ExitPermissionPage() {
               </span>
               <p className="mt-3 font-bold text-emerald-800">Back at campus</p>
               <p className="text-sm text-emerald-700">Welcome back!</p>
-              {latest?.actualReturnAt && (
+              {lastReturnAt && (
                 <p className="mt-1 text-xs text-emerald-600">
-                  Marked returned {formatDateTime(latest.actualReturnAt)}
+                  Marked returned {formatDateTime(lastReturnAt)}
                 </p>
               )}
             </div>
