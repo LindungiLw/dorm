@@ -4,6 +4,7 @@ import { PageHeader, Card, StatusBadge, Alert } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
 import { ModuleSubnav, PERMISSION_TABS } from "@/components/ModuleSubnav";
 import { LeavePassForm } from "@/components/LeavePassForm";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 function mapLink(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
@@ -29,6 +30,8 @@ export default async function ExitPermissionPage() {
 
   return (
     <div>
+      {/* While out, poll so the card flips the moment security marks the return. */}
+      {isOut && <AutoRefresh seconds={15} />}
       <ModuleSubnav tabs={PERMISSION_TABS} />
       <PageHeader
         title="Exit Permissions"

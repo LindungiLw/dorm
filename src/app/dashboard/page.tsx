@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
+import { isSecurityKiosk } from "@/lib/authz/policy";
 
 // Icon-only module launcher. Each icon jumps to the module's primary page; the second
 // feature is reachable via the in-module subnav tabs.
@@ -27,6 +29,9 @@ const MODULES = [
 export default async function DashboardLanding() {
   const actor = await getCurrentActor();
   if (!actor) return null;
+
+  // A satpam account has no module picker — send it straight to its one page.
+  if (isSecurityKiosk(actor)) redirect("/dashboard/security");
 
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center py-6">

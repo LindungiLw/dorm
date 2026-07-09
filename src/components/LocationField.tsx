@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MapPreview } from "@/components/MapPreview";
 
 // Captures a location point via the browser Geolocation API and carries it in hidden
 // `lat`/`lng` fields. Optional — the form still submits if the user declines.
@@ -29,34 +30,30 @@ export function LocationField({ label }: { label: string }) {
       <label className="label">{label}</label>
       <input type="hidden" name="lat" value={coords?.lat ?? ""} readOnly />
       <input type="hidden" name="lng" value={coords?.lng ?? ""} readOnly />
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={capture}
-          disabled={status === "loading"}
-          className="btn-outline w-full justify-center text-sm sm:w-auto"
-        >
-          <PinIcon />
-          {status === "loading"
-            ? "Getting location…"
-            : coords
-              ? "Update location"
-              : "Use my current location"}
-        </button>
-        {coords && (
-          <a
-            href={`https://www.google.com/maps?q=${coords.lat},${coords.lng}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs font-medium text-navy-600 hover:underline"
-          >
-            📍 {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-          </a>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={capture}
+        disabled={status === "loading"}
+        className="btn-outline w-full justify-center text-sm sm:w-auto"
+      >
+        <PinIcon />
+        {status === "loading"
+          ? "Getting location…"
+          : coords
+            ? "Update Location"
+            : "Current Location"}
+      </button>
+      {coords && (
+        <>
+          <MapPreview lat={coords.lat} lng={coords.lng} className="mt-3" />
+          <p className="mt-1.5 text-xs font-medium text-emerald-600">
+            Location captured. Submit to save it.
+          </p>
+        </>
+      )}
       {status === "error" && (
         <p className="mt-1 text-xs text-amber-600">
-          Couldn&rsquo;t get your location — you can still submit without it.
+          Couldn&rsquo;t get your location. You can still submit without it.
         </p>
       )}
     </div>

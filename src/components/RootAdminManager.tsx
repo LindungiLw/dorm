@@ -16,6 +16,7 @@ const ROLES = [
   { value: "CAFETERIA_ADMIN", label: "Cafeteria admin" },
   { value: "DORMITORY_ADMIN", label: "Dorm admin" },
   { value: "MARKET_ADMIN", label: "Market admin" },
+  { value: "SECURITY", label: "Security (Satpam)" },
 ];
 const roleLabel = (r: string) => ROLES.find((x) => x.value === r)?.label ?? r;
 

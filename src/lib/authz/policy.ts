@@ -15,6 +15,7 @@ export type Role =
   | "DORMITORY_ADMIN"
   | "ACADEMIC_ADMIN"
   | "MARKET_ADMIN"
+  | "SECURITY"
   | "ROOT";
 
 export type RoleGrant = {
@@ -45,6 +46,7 @@ export type Action =
   | "exit:create"
   | "exit:viewOwn"
   | "exit:listDorm"
+  | "exit:listAll"
   | "exit:decide"
   | "cafeteria:manageMenu"
   | "cafeteria:manageAllergens"
@@ -101,11 +103,14 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
       return ownsResource && isMealEntitled(actor);
 
     case "exit:create":
-      // Exit-dorm requests are for dorm-resident students.
+      // Exit-dorm requests are for dorm-resident students only. A security (satpam)
+      // account is staff on duty, never a dorm resident, so it can never file a pass —
+      // even if it was provisioned with a student-like persona.
       return (
         ownsResource &&
         actor.memberType === "STUDENT" &&
-        actor.dormId != null
+        actor.dormId != null &&
+        !hasRole(actor, "SECURITY")
       );
 
     case "exit:viewOwn":
@@ -113,11 +118,23 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
 
     // --- Role + scope admin actions ---
     case "exit:listDorm":
-    case "exit:decide":
       return (
         hasRole(actor, "DORMITORY_ADMIN") &&
         resource.dormId !== undefined &&
         scopesFor(actor, "DORMITORY_ADMIN").includes(resource.dormId)
+      );
+
+    // Campus security (satpam) sees every dorm's live "who is out" board.
+    case "exit:listAll":
+      return hasRole(actor, "SECURITY");
+
+    // Closing a pass = dorm staff scoped to that dorm, OR campus security (any dorm).
+    case "exit:decide":
+      return (
+        (hasRole(actor, "DORMITORY_ADMIN") &&
+          resource.dormId !== undefined &&
+          scopesFor(actor, "DORMITORY_ADMIN").includes(resource.dormId)) ||
+        hasRole(actor, "SECURITY")
       );
 
     // Cafeteria staff: manage the menu / allergen list and check students in.
@@ -167,5 +184,12 @@ export function adminHomeFor(actor: Actor): string | null {
   if (hasRole(actor, "DORMITORY_ADMIN")) return "/dashboard/dorm";
   if (hasRole(actor, "CAFETERIA_ADMIN")) return "/dashboard/cafeteria";
   if (hasRole(actor, "MARKET_ADMIN")) return "/dashboard/market/admin";
+  if (hasRole(actor, "SECURITY")) return "/dashboard/security";
   return null;
+}
+
+// A security (satpam) account is a single-purpose kiosk: its only page is the gate
+// monitor. The module nav and every other menu are hidden for it. ROOT is never limited.
+export function isSecurityKiosk(actor: Actor): boolean {
+  return hasRole(actor, "SECURITY") && !hasRole(actor, "ROOT");
 }

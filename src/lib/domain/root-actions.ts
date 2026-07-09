@@ -62,15 +62,18 @@ export async function grantRoleAction(
       return { error: `Use a campus @${ALLOWED_DOMAIN} email address.` };
     }
     const localPart = email.split("@")[0];
+    // A satpam is campus staff, not a dorm resident: no dorm, non-student persona so it
+    // never lands on any dorm roster or the leave-pass flow.
+    const isSecurity = role === "SECURITY";
     try {
       target = await prisma.member.create({
         data: {
-          memberType: "STUDENT",
+          memberType: isSecurity ? "STAFF" : "STUDENT",
           fullName: localPart,
           campusId: localPart,
           email,
           status: "ACTIVE",
-          dormId: "DORM-A",
+          dormId: isSecurity ? null : "DORM-A",
           passwordHash: await hashPassword(randomUUID()), // unusable (SSO only)
         },
       });

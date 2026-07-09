@@ -102,9 +102,9 @@ export async function markReturnedAction(
   });
   if (!req) return { error: "Pass not found." };
 
-  // Role + dorm-scope check: only a DORMITORY_ADMIN for that dorm may mark a return.
+  // Role + scope check: dorm staff for that dorm, OR campus security (satpam).
   if (!can(actor, "exit:decide", { dormId: req.dormId })) {
-    return { error: "Only dorm staff can mark a student returned." };
+    return { error: "Only dorm staff or security can mark a student returned." };
   }
 
   // Guarded transition: close only while still OUT.
@@ -123,5 +123,7 @@ export async function markReturnedAction(
     dormId: req.dormId,
   });
   revalidatePath("/dashboard/dorm");
+  revalidatePath("/dashboard/security");
+  revalidatePath("/dashboard/permission/exit");
   return { ok: "Marked returned." };
 }

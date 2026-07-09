@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { DashboardShell, type ShellUser } from "@/components/DashboardShell";
 import { getCurrentActor } from "@/lib/auth/session";
-import { hasRole, adminHomeFor, type Actor } from "@/lib/authz/policy";
+import {
+  hasRole,
+  adminHomeFor,
+  isSecurityKiosk,
+  type Actor,
+} from "@/lib/authz/policy";
 
 function initialsOf(name: string): string {
   const words = name.replace(/[^A-Za-z ]/g, "").trim().split(/\s+/).filter(Boolean);
@@ -17,6 +22,7 @@ function roleLabel(actor: Actor): string {
   if (hasRole(actor, "DORMITORY_ADMIN")) return "Dorm Admin";
   if (hasRole(actor, "CAFETERIA_ADMIN")) return "Cafeteria Admin";
   if (hasRole(actor, "MARKET_ADMIN")) return "Market Admin";
+  if (hasRole(actor, "SECURITY")) return "Security";
   return actor.memberType === "FACULTY" ? "Faculty" : "Student";
 }
 
@@ -36,6 +42,7 @@ export default async function DashboardLayout({
     photoUrl: actor.photoUrl,
     isAdmin: adminHref !== null,
     adminHref: adminHref ?? undefined,
+    isKiosk: isSecurityKiosk(actor),
   };
 
   return <DashboardShell user={user}>{children}</DashboardShell>;

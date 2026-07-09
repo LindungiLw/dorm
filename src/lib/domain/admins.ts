@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/db";
 
-// The three module-admin roles that ROOT manages.
+// The module-admin roles that ROOT manages.
 export const MANAGED_ROLES = [
   "CAFETERIA_ADMIN",
   "DORMITORY_ADMIN",
   "MARKET_ADMIN",
+  "SECURITY",
 ] as const;
 export type ManagedRole = (typeof MANAGED_ROLES)[number];
 
@@ -12,6 +13,7 @@ export const ROLE_LABEL: Record<ManagedRole, string> = {
   CAFETERIA_ADMIN: "Cafeteria admin",
   DORMITORY_ADMIN: "Dorm admin",
   MARKET_ADMIN: "Market admin",
+  SECURITY: "Security (Satpam)",
 };
 
 export type AdminRow = {

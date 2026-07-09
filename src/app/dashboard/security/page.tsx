@@ -1,39 +1,36 @@
 import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
-import { hasRole, scopesFor } from "@/lib/authz/policy";
-import { getDormRequests } from "@/lib/domain/permissions";
+import { hasRole } from "@/lib/authz/policy";
+import { getOutRequests, getRecentReturns } from "@/lib/domain/permissions";
 import { PageHeader, Card, StatusBadge } from "@/components/ui";
-import { formatDateTime } from "@/lib/time";
+import { formatDateTime, formatClock } from "@/lib/time";
 import { ReturnButton } from "@/components/ReturnButton";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { MapPreview } from "@/components/MapPreview";
 
-export default async function DormAdminPage() {
+// Satpam kiosk: the ONE page a security account has. A live board of every student
+// currently out, each with a Return button. No other menu is reachable.
+export default async function SecurityMonitorPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  // Dorm admins only — others are bounced home silently.
-  if (!hasRole(actor, "DORMITORY_ADMIN")) redirect("/dashboard");
+  // Security accounts only — everyone else is bounced home silently.
+  if (!hasRole(actor, "SECURITY")) redirect("/dashboard");
 
-  const scopeIds = scopesFor(actor, "DORMITORY_ADMIN");
-  const requests = await getDormRequests(scopeIds);
-  const out = requests.filter((r) => r.status === "OUT");
-  // Order the closed passes by when they actually came back (newest first), not by
-  // departure time — the base query sorts by departure.
-  const returned = requests
-    .filter((r) => r.status === "RETURNED")
-    .sort(
-      (a, b) =>
-        (b.actualReturnAt?.getTime() ?? 0) - (a.actualReturnAt?.getTime() ?? 0),
-    );
+  const [out, returned] = await Promise.all([
+    getOutRequests(),
+    getRecentReturns(15),
+  ]);
 
   return (
     <div>
-      <AutoRefresh seconds={12} />
+      {/* Live board — refreshes on its own so new passes appear and returns drop off. */}
+      <AutoRefresh seconds={10} />
+
       <PageHeader
-        title="Dorm Access Monitor"
-        subtitle={`Scope: ${scopeIds.filter(Boolean).join(", ") || "—"}`}
-        icon="🗂️"
+        title="Security · Gate Monitor"
+        subtitle="Students currently outside · mark them returned when they arrive back"
+        icon="🛡️"
       />
 
       <h2 className="mb-3 font-semibold text-navy-800">
@@ -58,7 +55,8 @@ export default async function DormAdminPage() {
               </div>
               <p className="mt-2 text-sm text-navy-700">📍 {r.destination}</p>
               <p className="text-sm text-navy-500">
-                {formatDateTime(r.departureAt)} → {formatDateTime(r.returnAt)}
+                Out {formatDateTime(r.departureAt)} · back by{" "}
+                {formatDateTime(r.returnAt)}
               </p>
               {r.departureLat != null && r.departureLng != null && (
                 <MapPreview
@@ -87,8 +85,8 @@ export default async function DormAdminPage() {
                   <span className="text-navy-700">
                     {r.member.fullName} · {r.destination}
                   </span>
-                  <span className="text-xs text-navy-400">
-                    {r.actualReturnAt ? `back ${formatDateTime(r.actualReturnAt)}` : ""}
+                  <span className="text-xs text-emerald-600">
+                    {r.actualReturnAt ? `back ${formatClock(r.actualReturnAt)} WIB` : ""}
                   </span>
                 </li>
               ))}
