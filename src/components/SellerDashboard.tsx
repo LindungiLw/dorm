@@ -8,7 +8,7 @@ import {
 } from "@/lib/domain/seller-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Alert, Card } from "@/components/ui";
-import { CATEGORIES, CATEGORY_LABEL, formatRupiah, type Product } from "@/lib/market-shared";
+import { formatRupiah, type Product } from "@/lib/market-shared";
 
 function ProductForm() {
   const [state, action] = useActionState<SellerState, FormData>(
@@ -31,13 +31,12 @@ function ProductForm() {
           <label className="label" htmlFor="category">
             Category
           </label>
-          <select id="category" name="category" className="input" defaultValue="ELECTRONICS">
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <input
+            id="category"
+            name="category"
+            className="input"
+            placeholder="e.g. Makanan, Elektronik, Baju"
+          />
         </div>
         <div>
           <label className="label" htmlFor="price">
@@ -91,7 +90,7 @@ function ProductRow({ p }: { p: Product }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-navy-800">{p.name}</p>
         <p className="text-xs text-navy-400">
-          {CATEGORY_LABEL[p.category] ?? p.category} · {formatRupiah(p.price)}
+          {p.category} · {formatRupiah(p.price)}
         </p>
         {state.error && <p className="text-xs text-red-600">{state.error}</p>}
       </div>

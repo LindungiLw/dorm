@@ -6,12 +6,10 @@ import { prisma } from "@/lib/db";
 import { getCurrentActor } from "@/lib/auth/session";
 import { can } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
-import { CATEGORIES } from "@/lib/market-shared";
 
 export type SellerState = { error?: string; ok?: string };
 
 const IMG_MAX_CHARS = 700_000; // ~520 KB base64 — enough for a scannable QRIS at 512px.
-const CATEGORY_VALUES = CATEGORIES.map((c) => c.value) as [string, ...string[]];
 
 // ---- Member: request to become a seller (personal data + QRIS) --------------------
 const requestSchema = z.object({
@@ -153,7 +151,8 @@ export async function revokeSellerAction(
 // ---- Seller: create / delete product listings ------------------------------------
 const productSchema = z.object({
   name: z.string().trim().min(2, "Enter a product name.").max(80),
-  category: z.enum(CATEGORY_VALUES),
+  // The seller writes their own category (free text) — no fixed list.
+  category: z.string().trim().min(2, "Enter a category.").max(40),
   price: z.coerce.number().int("Price must be a whole number.").min(0).max(1_000_000_000),
   description: z.string().trim().min(3, "Add a short description.").max(500),
   emoji: z.string().trim().max(8).optional(),

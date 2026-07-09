@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  CATEGORIES,
-  CATEGORY_LABEL,
-  formatRupiah,
-  type Product,
-} from "@/lib/market-shared";
+import { formatRupiah, type Product } from "@/lib/market-shared";
 
-const CAT_EMOJI: Record<string, string> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.value, c.emoji]),
-);
-const visual = (p: Product) => p.emoji || CAT_EMOJI[p.category] || "📦";
+const visual = (p: Product) => p.emoji || "📦";
 
 type SellerGroup = {
   key: string;
@@ -54,6 +46,12 @@ export function ProductCatalog({ products }: { products: Product[] }) {
 
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const qty = (id: string) => cart[id] ?? 0;
+
+  // Category chips are built from the categories sellers actually typed (no fixed list).
+  const cats = useMemo(
+    () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort(),
+    [products],
+  );
 
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
   const setQtyFor = (id: string, q: number) =>
@@ -139,21 +137,19 @@ export function ProductCatalog({ products }: { products: Product[] }) {
         <CartButton count={cartCount} onClick={() => setCartOpen(true)} />
       </div>
 
-      {/* Category chips */}
-      <div className="mb-5 flex flex-wrap gap-2">
-        <Chip active={category === "ALL"} onClick={() => setCategory("ALL")}>
-          All
-        </Chip>
-        {CATEGORIES.map((c) => (
-          <Chip
-            key={c.value}
-            active={category === c.value}
-            onClick={() => setCategory(c.value)}
-          >
-            <span aria-hidden>{c.emoji}</span> {c.label}
+      {/* Category chips — only when sellers have added categories */}
+      {cats.length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          <Chip active={category === "ALL"} onClick={() => setCategory("ALL")}>
+            All
           </Chip>
-        ))}
-      </div>
+          {cats.map((c) => (
+            <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
+              {c}
+            </Chip>
+          ))}
+        </div>
+      )}
 
       {/* Grid — two columns on phones so cards stay compact */}
       {filtered.length === 0 ? (
@@ -182,9 +178,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
               <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-navy-800">
                 {p.name}
               </h3>
-              <p className="mt-0.5 text-[11px] text-navy-400">
-                {CATEGORY_LABEL[p.category] ?? p.category}
-              </p>
+              <p className="mt-0.5 text-[11px] text-navy-400">{p.category}</p>
               <p className="mt-1 font-bold text-navy-700">{formatRupiah(p.price)}</p>
               <button
                 type="button"
@@ -212,7 +206,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
               {visual(selected)}
             </div>
             <span className="mt-3 inline-block rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-semibold text-navy-700">
-              {CATEGORY_LABEL[selected.category] ?? selected.category}
+              {selected.category}
             </span>
             <h2 className="mt-2 text-xl font-bold text-navy-800">{selected.name}</h2>
             <p className="mt-1 text-2xl font-bold text-navy-700">
