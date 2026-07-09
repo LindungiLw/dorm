@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { SubMenuCapsule } from "@/components/SubMenuCapsule";
 import { logoutAction } from "@/lib/auth/actions";
 import type { AdminConsole } from "@/lib/authz/policy";
 
@@ -46,9 +45,8 @@ export function DashboardShell({
             photoUrl={user.photoUrl}
             consoles={user.adminConsoles}
           />
-          {/* Mobile: bottom module pill + the active module's icon sub-menu on the side */}
+          {/* Mobile: bottom pill = Home + the active module's sub-menu */}
           <MobileNav consoles={user.adminConsoles} />
-          <SubMenuCapsule />
         </>
       )}
 
