@@ -9,28 +9,11 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { Alert } from "@/components/ui";
 import { LocationField } from "@/components/LocationField";
 
-type Preset = { label: string; date: string; time: string };
-
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 function fmtDate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-// A couple of one-tap return times so students rarely need the native picker on a phone.
-// Built on the client (in an effect) so the device clock, not the server's, decides them.
-function buildPresets(): Preset[] {
-  const now = new Date();
-  const out: Preset[] = [];
-  if (now.getHours() < 21) {
-    out.push({ label: "Tonight, 9 PM", date: fmtDate(now), time: "21:00" });
-  }
-  const tmr = new Date(now);
-  tmr.setDate(tmr.getDate() + 1);
-  out.push({ label: "Tomorrow, 8 AM", date: fmtDate(tmr), time: "08:00" });
-  out.push({ label: "Tomorrow, 6 PM", date: fmtDate(tmr), time: "18:00" });
-  return out;
 }
 
 export function LeavePassForm() {
@@ -41,12 +24,10 @@ export function LeavePassForm() {
 
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [presets, setPresets] = useState<Preset[]>([]);
   const [minDate, setMinDate] = useState("");
 
-  // Client-only: avoids a server/client hydration mismatch on the computed dates.
+  // Client-only: today's date as the earliest selectable day (avoids a hydration mismatch).
   useEffect(() => {
-    setPresets(buildPresets());
     setMinDate(fmtDate(new Date()));
   }, []);
 
@@ -73,33 +54,6 @@ export function LeavePassForm() {
 
       <div>
         <span className="label">Expected return</span>
-
-        {presets.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {presets.map((p) => {
-              const active = date === p.date && time === p.time;
-              return (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => {
-                    setDate(p.date);
-                    setTime(p.time);
-                  }}
-                  aria-pressed={active}
-                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                    active
-                      ? "border-navy-600 bg-navy-600 text-white"
-                      : "border-navy-200 text-navy-600 hover:bg-navy-50"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input
             aria-label="Return date"

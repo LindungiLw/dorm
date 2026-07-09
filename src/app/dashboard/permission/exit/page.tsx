@@ -50,10 +50,6 @@ export default async function ExitPermissionPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Leave Pass */}
         <Card>
-          <h2 className="mb-1 font-semibold text-navy-800">Leave Pass</h2>
-          <p className="mb-3 text-sm text-navy-500">
-            Log that you&rsquo;re leaving the dorm.
-          </p>
           <LeavePassForm />
         </Card>
 
