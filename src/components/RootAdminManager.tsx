@@ -28,10 +28,7 @@ function GrantForm() {
       action={action}
       className="rounded-xl border border-dashed border-navy-200 bg-navy-50/40 p-4"
     >
-      <p className="mb-1 text-sm font-semibold text-navy-800">Grant admin access</p>
-      <p className="mb-3 text-xs text-navy-400">
-        The person must have signed in at least once first.
-      </p>
+      <p className="mb-3 text-sm font-semibold text-navy-800">Grant admin access</p>
       {state.error && (
         <div className="mb-2">
           <Alert tone="error">{state.error}</Alert>
@@ -42,34 +39,71 @@ function GrantForm() {
           <Alert tone="success">{state.ok}</Alert>
         </div>
       )}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="person@jiu.ac"
-          className="input text-sm sm:flex-1"
-        />
-        <select
-          name="role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="input text-sm sm:w-44"
+
+      <div className="space-y-3">
+        <div>
+          <label className="label" htmlFor="grant-email">
+            Admin email
+          </label>
+          <input
+            id="grant-email"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            required
+            placeholder="e.g. jiupoem2026@jiu.ac"
+            className="input text-base sm:text-sm"
+          />
+          <p className="mt-1 text-xs text-navy-400">
+            They must have signed in at least once.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="grant-role">
+              Role
+            </label>
+            <select
+              id="grant-role"
+              name="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="input text-base sm:text-sm"
+            >
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {role === "DORMITORY_ADMIN" && (
+            <div>
+              <label className="label" htmlFor="grant-dorm">
+                Dorm
+              </label>
+              <select
+                id="grant-dorm"
+                name="dormId"
+                defaultValue="DORM-A"
+                className="input text-base sm:text-sm"
+              >
+                <option value="DORM-A">DORM-A</option>
+                <option value="DORM-B">DORM-B</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        <SubmitButton
+          className="btn-primary w-full sm:w-auto sm:px-8"
+          pendingText="Granting…"
         >
-          {ROLES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-        {role === "DORMITORY_ADMIN" && (
-          <select name="dormId" className="input text-sm sm:w-32" defaultValue="DORM-A">
-            <option value="DORM-A">DORM-A</option>
-            <option value="DORM-B">DORM-B</option>
-          </select>
-        )}
-        <SubmitButton className="btn-primary shrink-0" pendingText="Granting…">
-          Grant
+          Grant access
         </SubmitButton>
       </div>
     </form>
