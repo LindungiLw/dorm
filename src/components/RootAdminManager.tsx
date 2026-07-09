@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import {
   grantRoleAction,
   revokeRoleAction,
@@ -22,7 +22,6 @@ const roleLabel = (r: string) => ROLES.find((x) => x.value === r)?.label ?? r;
 
 function GrantForm() {
   const [state, action] = useActionState<RootState, FormData>(grantRoleAction, {});
-  const [role, setRole] = useState("CAFETERIA_ADMIN");
 
   return (
     <form
@@ -63,41 +62,22 @@ function GrantForm() {
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="grant-role">
-              Role
-            </label>
-            <select
-              id="grant-role"
-              name="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="input"
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {role === "DORMITORY_ADMIN" && (
-            <div>
-              <label className="label" htmlFor="grant-dorm">
-                Dorm
-              </label>
-              <select
-                id="grant-dorm"
-                name="dormId"
-                defaultValue="DORM-A"
-                className="input"
-              >
-                <option value="DORM-A">DORM-A</option>
-                <option value="DORM-B">DORM-B</option>
-              </select>
-            </div>
-          )}
+        <div>
+          <label className="label" htmlFor="grant-role">
+            Role
+          </label>
+          <select
+            id="grant-role"
+            name="role"
+            defaultValue="CAFETERIA_ADMIN"
+            className="input"
+          >
+            {ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <SubmitButton
@@ -113,7 +93,11 @@ function GrantForm() {
 
 function AdminRowItem({ admin }: { admin: AdminRow }) {
   const [state, action] = useActionState<RootState, FormData>(revokeRoleAction, {});
-  const scope = admin.scopeId ? admin.scopeId.replace(/-/g, " ") : "";
+  // Only one dorm exists, so a dorm admin shows no scope suffix.
+  const scope =
+    admin.scopeId && admin.role !== "DORMITORY_ADMIN"
+      ? admin.scopeId.replace(/-/g, " ")
+      : "";
   return (
     <li className="rounded-xl border border-navy-100 p-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

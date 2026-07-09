@@ -100,7 +100,11 @@ export async function grantRoleAction(
     grantedBy: actor.email,
   });
   revalidatePath("/dashboard/root");
-  const scopeLabel = scopeId ? ` (${scopeId.replace(/-/g, " ")})` : "";
+  // Only one dorm exists, so a dorm admin needs no scope suffix.
+  const scopeLabel =
+    scopeId && role !== "DORMITORY_ADMIN"
+      ? ` (${scopeId.replace(/-/g, " ")})`
+      : "";
   return {
     ok: `${target.email} is now ${ROLE_LABEL[role]}${scopeLabel}.`,
   };

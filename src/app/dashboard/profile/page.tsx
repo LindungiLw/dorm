@@ -2,7 +2,6 @@ import { getCurrentActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui";
 import { logoutAction } from "@/lib/auth/actions";
-import { AllergyForm } from "./AllergyForm";
 import { IdentityForm } from "./IdentityForm";
 import { ProfileAvatar } from "./ProfileAvatar";
 
@@ -37,7 +36,7 @@ export default async function ProfilePage() {
   // JIUnity-owned fields need loading.
   const extra = await prisma.member.findUnique({
     where: { id: actor.id },
-    select: { campusId: true, allergyInfo: true, photoUrl: true },
+    select: { campusId: true, photoUrl: true },
   });
   if (!extra) return null;
 
@@ -65,32 +64,15 @@ export default async function ProfilePage() {
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* My profile — editable identity */}
-        <Card>
-          <h2 className="mb-3 font-semibold text-navy-800">My profile</h2>
-          <IdentityForm
-            campusId={extra.campusId}
-            memberType={actor.memberType}
-            dormId={actor.dormId}
-          />
-        </Card>
-
-        {/* Allergy — one short explanation, no duplicate heading */}
-        <Card>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold text-navy-800">Allergy</h2>
-            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-xs text-navy-600">
-              you own this · sensitive
-            </span>
-          </div>
-          <p className="mb-4 text-sm text-navy-500">
-            Note the ingredients you&rsquo;re allergic to — matched against the allergens
-            the cafeteria flags on its menu.
-          </p>
-          <AllergyForm initial={extra.allergyInfo ?? ""} />
-        </Card>
-      </div>
+      {/* My profile — editable identity */}
+      <Card>
+        <h2 className="mb-3 font-semibold text-navy-800">My profile</h2>
+        <IdentityForm
+          campusId={extra.campusId}
+          memberType={actor.memberType}
+          dormId={actor.dormId}
+        />
+      </Card>
 
       {/* Sign out — at the very bottom */}
       <div className="mt-8 flex justify-center">
