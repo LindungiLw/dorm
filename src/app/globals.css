@@ -155,12 +155,26 @@ select.input option {
   color-scheme: only light;
 }
 
-/* Native date/time boxes render at their own intrinsic height on iOS, which makes them
-   jump larger than the text inputs beside them. Pin them to the same box so a row stays
-   even. */
+/* Native date/time boxes render at their own intrinsic height on iOS (jumping larger than
+   the inputs beside them) and hide any dropdown affordance. Give them the same crisp box
+   and chevron as the select controls so they read as a tappable picker on a phone. */
 input[type="date"].input,
 input[type="time"].input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   min-height: 2.6rem;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231e2f6d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+/* Keep the native picker openable on Chrome/Android but hide its default glyph — the
+   chevron above stands in, so the affordance matches the select boxes everywhere. */
+input[type="date"].input::-webkit-calendar-picker-indicator,
+input[type="time"].input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
 }
 
 /* On phones, 16px form controls stop iOS zoom-on-focus; a taller box is a comfier tap

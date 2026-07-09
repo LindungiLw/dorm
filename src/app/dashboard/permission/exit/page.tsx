@@ -2,15 +2,11 @@ import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { getOwnExitRequests } from "@/lib/domain/permissions";
-import { PageHeader, Card, StatusBadge } from "@/components/ui";
+import { PageHeader, Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
 import { ModuleSubnav, PERMISSION_TABS } from "@/components/ModuleSubnav";
 import { LeavePassForm } from "@/components/LeavePassForm";
 import { AutoRefresh } from "@/components/AutoRefresh";
-
-function mapLink(lat: number, lng: number) {
-  return `https://www.google.com/maps?q=${lat},${lng}`;
-}
 
 export default async function ExitPermissionPage() {
   const actor = await getCurrentActor();
@@ -108,61 +104,6 @@ export default async function ExitPermissionPage() {
           )}
         </Card>
       </div>
-
-      {/* History */}
-      <Card className="mt-6">
-        <h2 className="mb-3 font-semibold text-navy-800">
-          My passes ({passes.length})
-        </h2>
-        {passes.length === 0 ? (
-          <p className="text-sm text-navy-400">No passes yet.</p>
-        ) : (
-          <ul className="space-y-3">
-            {passes.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-lg border border-navy-100 p-3 text-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-navy-800">{r.destination}</span>
-                  <StatusBadge status={r.status} />
-                </div>
-                <p className="mt-1 text-navy-500">
-                  {formatDateTime(r.departureAt)} → {formatDateTime(r.returnAt)}
-                  {r.actualReturnAt && (
-                    <span className="text-emerald-600">
-                      {" "}
-                      · back {formatDateTime(r.actualReturnAt)}
-                    </span>
-                  )}
-                </p>
-                <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
-                  {r.departureLat != null && r.departureLng != null && (
-                    <a
-                      href={mapLink(r.departureLat, r.departureLng)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-navy-500 hover:underline"
-                    >
-                      📍 Departure point
-                    </a>
-                  )}
-                  {r.returnLat != null && r.returnLng != null && (
-                    <a
-                      href={mapLink(r.returnLat, r.returnLng)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-emerald-600 hover:underline"
-                    >
-                      📍 Return point
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </div>
   );
 }
