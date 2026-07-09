@@ -155,13 +155,23 @@ select.input option {
   color-scheme: only light;
 }
 
+/* Native date/time boxes render at their own intrinsic height on iOS, which makes them
+   jump larger than the text inputs beside them. Pin them to the same box so a row stays
+   even. */
+input[type="date"].input,
+input[type="time"].input {
+  min-height: 2.6rem;
+}
+
 /* On phones, 16px form controls stop iOS zoom-on-focus; a taller box is a comfier tap
    target and lines dropdowns up with the buttons next to them. */
 @media (max-width: 639px) {
   .input {
     font-size: 1rem;
   }
-  select.input {
+  select.input,
+  input[type="date"].input,
+  input[type="time"].input {
     min-height: 2.9rem;
     padding-top: 0.55rem;
     padding-bottom: 0.55rem;
