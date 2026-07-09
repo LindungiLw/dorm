@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
-import { isSecurityKiosk } from "@/lib/authz/policy";
+import { isSecurityKiosk, canUsePermission } from "@/lib/authz/policy";
 
 // Icon-only module launcher. Each icon jumps to the module's primary page; the second
 // feature is reachable via the in-module subnav tabs.
@@ -33,6 +33,11 @@ export default async function DashboardLanding() {
   // A satpam account has no module picker — send it straight to its one page.
   if (isSecurityKiosk(actor)) redirect("/dashboard/security");
 
+  // Staff / lecturers don't get the Permission module.
+  const modules = MODULES.filter(
+    (m) => m.title !== "Permission" || canUsePermission(actor),
+  );
+
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center py-6">
       <div className="mb-12 text-center">
@@ -42,8 +47,12 @@ export default async function DashboardLanding() {
         <p className="mt-2 text-navy-500">Choose a module to get started.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 sm:gap-12">
-        {MODULES.map((m) => (
+      <div
+        className={`grid gap-6 sm:gap-12 ${
+          modules.length <= 2 ? "grid-cols-2" : "grid-cols-3"
+        }`}
+      >
+        {modules.map((m) => (
           <Link
             key={m.title}
             href={m.href}

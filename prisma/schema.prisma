@@ -38,6 +38,9 @@ model Member {
   // return to keep that table lean, so this stamp is what powers the student's
   // "Back at campus" view.
   lastReturnAt DateTime?
+  // Set on first login once the member confirms their real ID (NIM / staff number). Until
+  // then they are sent to onboarding; after, the ID is locked.
+  idConfirmed  Boolean  @default(false)
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

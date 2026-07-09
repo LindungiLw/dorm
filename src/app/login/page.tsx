@@ -8,15 +8,14 @@ import { isGoogleConfigured } from "@/auth";
 
 const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied:
-    "Access Denied — sign in with your @jiu.ac campus Google account (not a personal Gmail). On a phone, tap your JIU account in the chooser.",
+    "Access denied. Log in with your campus Google account (@jiu.ac for students, @k-eduplex.net for staff), not a personal Gmail. On a phone, tap your campus account in the chooser.",
   Configuration:
-    "Sign-in hit a server error (the database may be waking up). Please wait a moment and try again — if it keeps failing, contact an administrator.",
-  Verification: "This sign-in link is invalid or has expired.",
-  CredentialsSignin: "Invalid credentials, or this account is not active.",
+    "Login hit a server error (the database may be waking up). Please wait a moment and try again. If it keeps failing, contact an administrator.",
+  Verification: "This login link is invalid or has expired.",
   Callback:
-    "Sign-in was interrupted. Open the app in Chrome or Safari directly (not inside another app's in-app browser) and try again.",
+    "Login was interrupted. Open the app in Chrome or Safari directly (not inside another app's in-app browser) and try again.",
   OAuthCallback:
-    "Sign-in was interrupted. Open the app in Chrome or Safari directly (not inside another app's in-app browser) and try again.",
+    "Login was interrupted. Open the app in Chrome or Safari directly (not inside another app's in-app browser) and try again.",
 };
 
 export default async function LoginPage({
@@ -29,7 +28,7 @@ export default async function LoginPage({
 
   const { error } = await searchParams;
   const errorMessage = error
-    ? (ERROR_MESSAGES[error] ?? "Sign-in failed. Please try again.")
+    ? (ERROR_MESSAGES[error] ?? "Login failed. Please try again.")
     : undefined;
 
   return (
@@ -39,7 +38,7 @@ export default async function LoginPage({
           <Link href="/" className="inline-block">
             <Logo size="lg" />
           </Link>
-          <h1 className="mt-6 text-2xl font-bold text-navy-800">Sign in</h1>
+          <h1 className="mt-6 text-2xl font-bold text-navy-800">Login</h1>
           <p className="mt-1 text-sm text-navy-500">
             Use your campus account to continue.
           </p>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole, scopesFor } from "@/lib/authz/policy";
@@ -28,6 +29,15 @@ export default async function DormAdminPage() {
         subtitle={`Scope: ${scopeIds.filter(Boolean).join(", ") || "—"}`}
         icon="🗂️"
       />
+
+      <div className="mb-5">
+        <Link
+          href="/dashboard/permission/borrow/manage"
+          className="btn-outline text-sm"
+        >
+          Manage borrow items
+        </Link>
+      </div>
 
       <h2 className="mb-3 font-semibold text-navy-800">
         Currently out ({out.length})

@@ -1,7 +1,8 @@
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { getOwnExitRequests } from "@/lib/domain/permissions";
-import { PageHeader, Card, StatusBadge, Alert } from "@/components/ui";
+import { PageHeader, Card, StatusBadge } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
 import { ModuleSubnav, PERMISSION_TABS } from "@/components/ModuleSubnav";
 import { LeavePassForm } from "@/components/LeavePassForm";
@@ -15,16 +16,8 @@ export default async function ExitPermissionPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  if (actor.memberType !== "STUDENT") {
-    return (
-      <div>
-        <PageHeader title="Exit Permissions" icon="🚪" />
-        <Alert tone="info">
-          Exit-dorm permissions are for dorm-resident students.
-        </Alert>
-      </div>
-    );
-  }
+  // The Permission module is for dorm-resident students only.
+  if (actor.memberType !== "STUDENT") redirect("/dashboard");
 
   const [passes, me] = await Promise.all([
     getOwnExitRequests(actor.id),

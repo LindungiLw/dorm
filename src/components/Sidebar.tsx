@@ -12,13 +12,17 @@ export function Sidebar({
   initials,
   photoUrl = null,
   consoles = [],
+  canUsePermission = true,
 }: {
   initials: string;
   photoUrl?: string | null;
   consoles?: AdminConsole[];
+  canUsePermission?: boolean;
 }) {
   const pathname = usePathname();
   const active = (m: string) => pathname.startsWith(m);
+  // Staff / lecturers don't get the Permission module.
+  const modules = MODULES.filter((m) => m.key !== "permission" || canUsePermission);
 
   return (
     <aside className="fixed left-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-navy-100 bg-white/95 p-2 shadow-lg backdrop-blur md:flex">
@@ -42,7 +46,7 @@ export function Sidebar({
 
       <span className="my-0.5 h-px w-6 bg-navy-100" />
 
-      {MODULES.map((m) => (
+      {modules.map((m) => (
         <Link
           key={m.key}
           href={m.primary}

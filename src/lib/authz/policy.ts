@@ -28,10 +28,11 @@ export type Actor = {
   id: string;
   fullName: string;
   email: string;
-  memberType: string; // STUDENT | FACULTY
+  memberType: string; // STUDENT | STAFF | LECTURER | FACULTY (legacy)
   status: string; // ACTIVE | SUSPENDED | INACTIVE
   dormId: string | null;
   photoUrl: string | null; // Google account photo or custom upload
+  idConfirmed: boolean; // has the member confirmed their real ID at onboarding
   roles: RoleGrant[];
 };
 
@@ -66,6 +67,12 @@ export function hasRole(actor: Actor, role: Role): boolean {
   return actor.roles.some((r) => r.role === role);
 }
 
+// The Permission module (exit passes + borrowing) is for dorm-resident students only.
+// Staff / lecturers (the @k-eduplex.net domain) don't get it.
+export function canUsePermission(actor: Actor): boolean {
+  return actor.memberType === "STUDENT";
+}
+
 export function roleNames(actor: Actor): Role[] {
   return actor.roles.map((r) => r.role);
 }
@@ -87,6 +94,9 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
   // A suspended/inactive member can do nothing that mutates or reads protected data.
   // (Defense in depth — such a member also can't obtain a live session.)
   if (actor.status !== "ACTIVE") return false;
+  // Until the member confirms their real ID at onboarding they can't perform any action,
+  // so a direct action POST can't slip past the onboarding gate.
+  if (!actor.idConfirmed) return false;
 
   const ownsResource = resource.ownerId !== undefined && resource.ownerId === actor.id;
 

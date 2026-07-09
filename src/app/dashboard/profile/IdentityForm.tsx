@@ -1,16 +1,8 @@
-"use client";
-
-import { useActionState } from "react";
-import { updateIdentityAction, type ProfileState } from "@/lib/domain/profile-actions";
-import { SubmitButton } from "@/components/SubmitButton";
-import { Alert } from "@/components/ui";
-
-// Map the stored member type to one of the three selectable statuses.
-function statusValue(memberType: string): string {
-  if (memberType === "LECTURER") return "LECTURER";
-  if (memberType === "STAFF") return "STAFF";
-  if (memberType === "FACULTY") return "STAFF"; // legacy value → closest option
-  return "STUDENT";
+// Identity is set once at onboarding and locked, so this is a read-only display.
+function statusLabel(memberType: string): string {
+  if (memberType === "LECTURER") return "Lecturer";
+  if (memberType === "STAFF" || memberType === "FACULTY") return "Staff";
+  return "Student";
 }
 
 export function IdentityForm({
@@ -22,48 +14,28 @@ export function IdentityForm({
   memberType: string;
   dormId: string | null;
 }) {
-  const [state, action] = useActionState<ProfileState, FormData>(updateIdentityAction, {});
-
+  const isStudent = memberType === "STUDENT";
   return (
-    <form action={action} className="space-y-3">
-      {state.error && <Alert tone="error">{state.error}</Alert>}
-      {state.ok && <Alert tone="success">{state.ok}</Alert>}
-
-      <div>
-        <label className="label" htmlFor="campusId">
-          Student ID (NIM)
-        </label>
-        <input
-          id="campusId"
-          name="campusId"
-          defaultValue={campusId}
-          className="input"
-          autoComplete="off"
-        />
+    <dl className="space-y-3 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <dt className="text-navy-400">
+          {isStudent ? "Student number (NIM)" : "Staff / Lecturer number"}
+        </dt>
+        <dd className="font-semibold text-navy-800">{campusId}</dd>
       </div>
-
-      <div>
-        <label className="label" htmlFor="memberType">
-          Status
-        </label>
-        <select
-          id="memberType"
-          name="memberType"
-          defaultValue={statusValue(memberType)}
-          className="input"
-        >
-          <option value="STUDENT">Student</option>
-          <option value="LECTURER">Lecturer</option>
-          <option value="STAFF">Staff</option>
-        </select>
+      <div className="flex items-center justify-between gap-3">
+        <dt className="text-navy-400">Status</dt>
+        <dd className="font-semibold text-navy-800">{statusLabel(memberType)}</dd>
       </div>
-
-      <div className="flex justify-between border-t border-navy-50 pt-3 text-sm">
-        <span className="text-navy-400">Dormitory</span>
-        <span className="font-medium text-navy-800">{dormId ?? "—"}</span>
-      </div>
-
-      <SubmitButton pendingText="Saving…">Save</SubmitButton>
-    </form>
+      {isStudent && (
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-navy-400">Dormitory</dt>
+          <dd className="font-semibold text-navy-800">{dormId ?? "None"}</dd>
+        </div>
+      )}
+      <p className="border-t border-navy-50 pt-3 text-xs text-navy-400">
+        Your ID is locked. Contact an admin if it needs a correction.
+      </p>
+    </dl>
   );
 }

@@ -61,7 +61,6 @@ export async function grantRoleAction(
     if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
       return { error: `Use a campus @${ALLOWED_DOMAIN} email address.` };
     }
-    const localPart = email.split("@")[0];
     // A satpam is campus staff, not a dorm resident: no dorm, non-student persona so it
     // never lands on any dorm roster or the leave-pass flow.
     const isSecurity = role === "SECURITY";
@@ -69,8 +68,10 @@ export async function grantRoleAction(
       target = await prisma.member.create({
         data: {
           memberType: isSecurity ? "STAFF" : "STUDENT",
-          fullName: localPart,
-          campusId: localPart,
+          // Placeholder name + id = the (unique) email; the real name is adopted on first
+          // Google login and the real ID at onboarding.
+          fullName: email,
+          campusId: email,
           email,
           status: "ACTIVE",
           dormId: isSecurity ? null : "DORM-A",

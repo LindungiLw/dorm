@@ -5,6 +5,7 @@ import {
   hasRole,
   adminConsolesFor,
   isSecurityKiosk,
+  canUsePermission,
   type Actor,
 } from "@/lib/authz/policy";
 
@@ -23,7 +24,9 @@ function roleLabel(actor: Actor): string {
   if (hasRole(actor, "CAFETERIA_ADMIN")) return "Cafeteria Admin";
   if (hasRole(actor, "MARKET_ADMIN")) return "Market Admin";
   if (hasRole(actor, "SECURITY")) return "Security";
-  return actor.memberType === "FACULTY" ? "Faculty" : "Student";
+  if (actor.memberType === "LECTURER") return "Lecturer";
+  if (actor.memberType === "STAFF" || actor.memberType === "FACULTY") return "Staff";
+  return "Student";
 }
 
 export default async function DashboardLayout({
@@ -33,6 +36,8 @@ export default async function DashboardLayout({
 }) {
   const actor = await getCurrentActor();
   if (!actor) redirect("/login");
+  // First login must confirm the real ID before anything else.
+  if (!actor.idConfirmed) redirect("/onboarding");
 
   const user: ShellUser = {
     fullName: actor.fullName,
@@ -41,6 +46,7 @@ export default async function DashboardLayout({
     photoUrl: actor.photoUrl,
     adminConsoles: adminConsolesFor(actor),
     isKiosk: isSecurityKiosk(actor),
+    canUsePermission: canUsePermission(actor),
   };
 
   return <DashboardShell user={user}>{children}</DashboardShell>;

@@ -1,19 +1,23 @@
 import { randomUUID } from "crypto";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { prisma } from "@/lib/db";
-import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { hashPassword } from "@/lib/auth/password";
 
-const ALLOWED_DOMAIN = "jiu.ac";
+// Two campus domains may sign in: @jiu.ac (students) and @k-eduplex.net (staff / lecturer).
+const ALLOWED_DOMAINS = ["jiu.ac", "k-eduplex.net"];
+const STAFF_DOMAIN = "k-eduplex.net";
+function isAllowedEmail(email: string): boolean {
+  return ALLOWED_DOMAINS.some((d) => email.endsWith(`@${d}`));
+}
 
 // Super-admin (ROOT) accounts — the only accounts that may grant/revoke the module
 // admin roles. Kept in code (not the DB) so root can never be revoked by accident.
 const ROOT_EMAILS = ["rahma23@jiu.ac"];
 
-// Google only appears once real OAuth credentials are provided, so the app still runs
-// (with credentials login) before you fill in the keys from Google Cloud Console.
+// Google only appears once real OAuth credentials are provided. It is the only sign-in
+// method, so there is no way in until the keys from the Google Cloud Console are set.
 export const isGoogleConfigured = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
 );
@@ -64,27 +68,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           Google({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            // Restrict the Google account chooser to the campus workspace (defense in depth).
+            // Two allowed domains, so the account chooser isn't pinned to one `hd`; the
+            // sign-in callback enforces the domain allow-list.
             authorization: {
-              params: { hd: ALLOWED_DOMAIN, prompt: "select_account" },
+              params: { prompt: "select_account" },
             },
           }),
         ]
       : []),
-    // Credentials stands in for SSO before OAuth keys exist (and for admin accounts
-    // without campus Google identities). Validated against the seeded roster.
-    Credentials({
-      credentials: { email: {}, password: {} },
-      authorize: async (creds) => {
-        const email = String(creds?.email ?? "").toLowerCase().trim();
-        const password = String(creds?.password ?? "");
-        if (!email || !password) return null;
-        const m = await prisma.member.findUnique({ where: { email } });
-        if (!m || m.status !== "ACTIVE") return null;
-        if (!(await verifyPassword(password, m.passwordHash))) return null;
-        return { id: m.id, email: m.email, name: m.fullName };
-      },
-    }),
   ],
   callbacks: {
     ...authConfig.callbacks,
@@ -97,15 +88,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = (p?.email ?? "").toLowerCase();
         const picture = typeof p?.picture === "string" ? p.picture : null;
 
-        // 1) The email must be provider-verified and end with @jiu.ac.
+        // 1) The email must be provider-verified and on an allowed campus domain.
         if (p?.email_verified === false) {
           console.warn(`[auth] denied: Google email not verified — ${email}`);
           return false;
         }
-        if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+        if (!isAllowedEmail(email)) {
           console.warn(
-            `[auth] denied: non-campus Google account — "${email}" (expected @${ALLOWED_DOMAIN}). ` +
-              `Likely a personal Gmail chosen on the device instead of the campus account.`,
+            `[auth] denied: non-campus Google account — "${email}" (expected @jiu.ac or ` +
+              `@k-eduplex.net). Likely a personal Gmail chosen instead of the campus account.`,
           );
           return false;
         }
@@ -172,30 +163,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         //    a least-privilege STUDENT. (Stands in for the SIS/directory sync: with a
         //    real directory you would resolve NIM + enrollment and reject non-roster.)
         const isRoot = ROOT_EMAILS.includes(email);
+        // Domain decides the persona: @k-eduplex.net = staff/lecturer (no dorm), everyone
+        // else = student. The real ID + exact status are confirmed at onboarding.
+        const isStaff = email.endsWith(`@${STAFF_DOMAIN}`);
         try {
           await prisma.member.create({
             data: {
-              memberType: "STUDENT",
-              fullName: p?.name ?? email.split("@")[0],
-              campusId: email.split("@")[0],
+              memberType: isStaff ? "STAFF" : "STUDENT",
+              fullName: p?.name ?? email,
+              // Placeholder = the (unique) email, so two domains that share a local part
+              // never collide on the unique campusId. Replaced by the real ID at onboarding.
+              campusId: email,
               email,
               status: "ACTIVE",
-              dormId: "DORM-A",
+              dormId: isStaff ? null : "DORM-A",
               photoUrl: picture,
               passwordHash: await hashPassword(randomUUID()), // unusable — SSO only
-              roleAssignments: { create: [{ role: isRoot ? "ROOT" : "STUDENT" }] },
+              roleAssignments: {
+                create: [{ role: isRoot ? "ROOT" : isStaff ? "FACULTY" : "STUDENT" }],
+              },
             },
           });
           console.info(
             `[auth] provisioned new campus member — ${email}${isRoot ? " (ROOT)" : ""}`,
           );
-        } catch {
-          // Concurrent first-login race — the unique(email) constraint means the other
-          // request already created it. Idempotent: fall through and allow sign-in.
+        } catch (err) {
+          // A concurrent first-login race means the other request already created this
+          // email row — idempotent, so allow sign-in. Anything else is a real failure:
+          // surface it so the user is never left signed in with no member record.
+          const exists = await prisma.member.findUnique({ where: { email } });
+          if (!exists) {
+            console.error(`[auth] provisioning failed for ${email}`, err);
+            throw err;
+          }
         }
         return true;
       }
-      // Credentials were already validated in `authorize`.
+      // Google is the only provider; nothing else reaches here.
       return true;
     },
   },

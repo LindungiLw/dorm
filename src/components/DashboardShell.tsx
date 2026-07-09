@@ -15,6 +15,7 @@ export type ShellUser = {
   photoUrl: string | null;
   adminConsoles: AdminConsole[];
   isKiosk?: boolean;
+  canUsePermission: boolean;
 };
 
 export function DashboardShell({
@@ -44,6 +45,7 @@ export function DashboardShell({
             initials={user.initials}
             photoUrl={user.photoUrl}
             consoles={user.adminConsoles}
+            canUsePermission={user.canUsePermission}
           />
           {/* Mobile: bottom pill = Home + the active module's sub-menu */}
           <MobileNav consoles={user.adminConsoles} />

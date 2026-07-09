@@ -1,8 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { loginAction, googleSignInAction, type LoginState } from "@/lib/auth/actions";
-import { SubmitButton } from "@/components/SubmitButton";
+import { googleSignInAction } from "@/lib/auth/actions";
 import { Alert } from "@/components/ui";
 
 export function LoginForm({
@@ -12,24 +10,15 @@ export function LoginForm({
   googleEnabled: boolean;
   initialError?: string;
 }) {
-  const [state, formAction] = useActionState<LoginState, FormData>(loginAction, {});
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  // Google is the primary sign in. Email/password stays as a fallback (dev + emergency),
-  // hidden behind a toggle, but shown by default when Google isn't configured.
-  const [showEmail, setShowEmail] = useState(!googleEnabled);
-
-  const error = state.error ?? initialError;
-
   return (
     <div className="w-full">
-      {error && (
+      {initialError && (
         <div className="mb-4">
-          <Alert tone="error">{error}</Alert>
+          <Alert tone="error">{initialError}</Alert>
         </div>
       )}
 
-      {/* Primary: campus Google sign in */}
+      {/* Campus Google is the only way in. */}
       <div className="flex flex-col items-center">
         <form action={googleSignInAction}>
           <button
@@ -46,59 +35,10 @@ export function LoginForm({
       </div>
 
       {!googleEnabled && (
-        <p className="mt-3 text-center text-xs text-navy-400">
-          Google sign in activates once <code>GOOGLE_CLIENT_ID</code> /{" "}
+        <p className="mt-4 text-center text-xs text-navy-400">
+          Google login activates once <code>GOOGLE_CLIENT_ID</code> /{" "}
           <code>GOOGLE_CLIENT_SECRET</code> are set.
         </p>
-      )}
-
-      {/* Fallback: email + password, tucked behind a small toggle */}
-      <div className="mt-6 text-center">
-        <button
-          type="button"
-          onClick={() => setShowEmail((s) => !s)}
-          className="text-xs font-medium text-navy-400 transition hover:text-navy-600 hover:underline"
-        >
-          {showEmail ? "Hide email sign in" : "Sign in with email instead"}
-        </button>
-      </div>
-
-      {showEmail && (
-        <form action={formAction} className="mt-4 space-y-4">
-          <div>
-            <label className="label" htmlFor="email">
-              Campus email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <SubmitButton className="btn-primary w-full" pendingText="Signing in…">
-            Sign in
-          </SubmitButton>
-        </form>
       )}
     </div>
   );
