@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  BORROW_CATEGORIES,
-  type BorrowItemRow,
-  type BorrowStatus,
-} from "@/lib/domain/borrow-types";
+import { type BorrowItemRow, type BorrowStatus } from "@/lib/domain/borrow-types";
 
 /* ---------------------------------------------------------------------------
    Student-facing borrow catalog. Items are maintained by the permission admin
@@ -48,18 +44,20 @@ export function BorrowCatalog({ items }: { items: BorrowItemRow[] }) {
   const toggleFav = (id: string) =>
     setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
-  // Only offer category chips that actually have items.
-  const filters = useMemo(() => {
-    const present = new Set(items.map((it) => it.category));
-    return [
+  // Categories come from what admins actually typed (no fixed list).
+  const cats = useMemo(
+    () => [...new Set(items.map((it) => it.category).filter(Boolean))].sort(),
+    [items],
+  );
+
+  const filters = useMemo(
+    () => [
       { key: "ALL", label: "All" },
-      ...BORROW_CATEGORIES.filter((c) => present.has(c.value)).map((c) => ({
-        key: c.value,
-        label: c.label,
-      })),
+      ...cats.map((c) => ({ key: c, label: c })),
       { key: "FAV", label: "Favorites" },
-    ];
-  }, [items]);
+    ],
+    [cats],
+  );
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -70,14 +68,13 @@ export function BorrowCatalog({ items }: { items: BorrowItemRow[] }) {
       return (
         it.name.toLowerCase().includes(q) ||
         it.location.toLowerCase().includes(q) ||
-        it.categoryLabel.toLowerCase().includes(q)
+        it.category.toLowerCase().includes(q)
       );
     });
-    return BORROW_CATEGORIES.map((c) => ({
-      name: c.label,
-      items: filtered.filter((it) => it.category === c.value),
-    })).filter((g) => g.items.length > 0);
-  }, [items, query, filter, favs]);
+    return cats
+      .map((c) => ({ name: c, items: filtered.filter((it) => it.category === c) }))
+      .filter((g) => g.items.length > 0);
+  }, [items, cats, query, filter, favs]);
 
   const empty = groups.length === 0;
 
@@ -220,7 +217,7 @@ function ItemCard({
       </div>
       <div className="p-3">
         <h3 className="line-clamp-1 text-sm font-semibold text-navy-800">{it.name}</h3>
-        <p className="text-[11px] text-navy-400">{it.categoryLabel}</p>
+        <p className="text-[11px] text-navy-400">{it.category}</p>
         <div className="mt-2 space-y-1 text-[11px] text-navy-500">
           {it.location && (
             <span className="flex items-center gap-1.5">
@@ -231,7 +228,7 @@ function ItemCard({
             <BoxIcon />{" "}
             {it.status === "BORROWED"
               ? "Currently unavailable"
-              : `${it.quantity} ${it.unitLabel} available`}
+              : `${it.quantity} available`}
           </span>
         </div>
       </div>
@@ -280,7 +277,7 @@ function DetailSheet({
               {s.label}
             </span>
             <h2 className="mt-1 text-lg font-bold text-navy-800">{it.name}</h2>
-            <p className="text-xs text-navy-400">{it.categoryLabel}</p>
+            <p className="text-xs text-navy-400">{it.category}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button
@@ -316,7 +313,7 @@ function DetailSheet({
           <InfoTile
             icon={<BoxIcon />}
             label="Available"
-            value={`${it.quantity} ${it.unitLabel}`}
+            value={`${it.quantity}`}
           />
           <InfoTile icon={<TagIcon />} label="Status" value={s.label} />
         </div>

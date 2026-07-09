@@ -8,13 +8,7 @@ import {
 } from "@/lib/domain/borrow-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Alert, Card } from "@/components/ui";
-import {
-  BORROW_CATEGORIES,
-  CATEGORY_LABEL,
-  unitLabelFor,
-  type BorrowItemRow,
-  type BorrowPart,
-} from "@/lib/domain/borrow-types";
+import { type BorrowItemRow, type BorrowPart } from "@/lib/domain/borrow-types";
 
 // Downscale a photo to a small JPEG data URL so rows stay light.
 function resizeToDataUrl(file: File, max = 900): Promise<string> {
@@ -105,7 +99,7 @@ function BorrowItemForm({
   const isEdit = !!item;
 
   const [name, setName] = useState(item?.name ?? "");
-  const [category, setCategory] = useState(item?.category ?? "ROOM");
+  const [category, setCategory] = useState(item?.category ?? "");
   const [quantity, setQuantity] = useState(String(item?.quantity ?? 1));
   const [location, setLocation] = useState(item?.location ?? "");
   const [schedule, setSchedule] = useState(item?.schedule ?? "");
@@ -127,7 +121,7 @@ function BorrowItemForm({
         onDone();
       } else {
         setName("");
-        setCategory("ROOM");
+        setCategory("");
         setQuantity("1");
         setLocation("");
         setSchedule("");
@@ -156,8 +150,6 @@ function BorrowItemForm({
       setBusy(false);
     }
   }
-
-  const unit = unitLabelFor(category);
 
   return (
     <form action={action} className="space-y-4">
@@ -234,19 +226,15 @@ function BorrowItemForm({
           <label className="label" htmlFor="bi-category">
             Category
           </label>
-          <select
+          <input
             id="bi-category"
             name="category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="input"
-          >
-            {BORROW_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            className="input text-base sm:text-sm"
+            placeholder="e.g. Ruang Belajar, Alat Olahraga"
+            required
+          />
         </div>
       </div>
 
@@ -254,7 +242,7 @@ function BorrowItemForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="bi-qty">
-            How many ({unit})
+            How many available
           </label>
           <input
             id="bi-qty"
@@ -435,7 +423,7 @@ function ItemRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-navy-800">{it.name}</p>
         <p className="truncate text-xs text-navy-400">
-          {CATEGORY_LABEL[it.category] ?? it.category} · {it.quantity} {it.unitLabel}
+          {it.category} · {it.quantity} available
           {it.parts.length > 0 ? ` · ${it.parts.length} parts` : ""}
         </p>
         {state.error && <p className="text-xs text-red-600">{state.error}</p>}

@@ -6,11 +6,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentActor } from "@/lib/auth/session";
 import { can } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
-import { unitLabelFor } from "@/lib/domain/borrow-types";
 
 export type BorrowState = { error?: string; ok?: string };
-
-const CATEGORIES = ["ROOM", "ELECTRONICS", "LAB", "SPORTS", "MUSIC", "OTHER"] as const;
 
 const partSchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -20,7 +17,8 @@ const partSchema = z.object({
 const saveSchema = z.object({
   id: z.string().trim().optional(),
   name: z.string().trim().min(2, "Enter an item name.").max(120),
-  category: z.enum(CATEGORIES),
+  // The admin writes their own category (free text) — no fixed list.
+  category: z.string().trim().min(1, "Enter a category.").max(40),
   imageUrl: z.string().trim().optional(),
   emoji: z.string().trim().max(8).optional(),
   location: z.string().trim().max(160).optional(),
@@ -96,7 +94,6 @@ export async function saveBorrowItemAction(
     location: d.location ?? "",
     schedule: d.schedule ?? "",
     quantity: d.quantity,
-    unitLabel: unitLabelFor(d.category),
     description: d.description ?? "",
     parts: cleanParts.length ? JSON.stringify(cleanParts) : null,
   };
