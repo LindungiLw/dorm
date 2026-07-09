@@ -21,7 +21,7 @@ export default async function BorrowPage() {
     <div>
       <ModuleSubnav tabs={PERMISSION_TABS} />
       <PageHeader
-        title="Peminjaman Barang"
+        title="Borrow Items"
         subtitle="Borrow items & book rooms across campus"
         icon="📦"
       />

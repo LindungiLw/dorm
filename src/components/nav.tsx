@@ -140,7 +140,7 @@ export type ModuleDef = {
 export const MODULES: ModuleDef[] = [
   {
     key: "cafeteria",
-    label: "Cafetaria",
+    label: "Cafeteria",
     base: "/dashboard/cafeteria",
     primary: "/dashboard/cafeteria/menu",
     icon: <QrIcon />,
@@ -158,8 +158,8 @@ export const MODULES: ModuleDef[] = [
     primary: "/dashboard/permission/exit",
     icon: <ClipboardIcon />,
     sub: [
-      { label: "Izin Keluar Masuk", href: "/dashboard/permission/exit", icon: <DoorIcon /> },
-      { label: "Peminjaman Barang", href: "/dashboard/permission/borrow", icon: <BoxIcon /> },
+      { label: "Exit Permission", href: "/dashboard/permission/exit", icon: <DoorIcon /> },
+      { label: "Borrow Items", href: "/dashboard/permission/borrow", icon: <BoxIcon /> },
     ],
   },
   {
@@ -169,8 +169,8 @@ export const MODULES: ModuleDef[] = [
     primary: "/dashboard/market/catalog",
     icon: <CartIcon />,
     sub: [
-      { label: "Katalog Produk", href: "/dashboard/market/catalog", icon: <GridIcon /> },
-      { label: "Jadi Penjual", href: "/dashboard/market/sell", icon: <StoreIcon /> },
+      { label: "Product Catalog", href: "/dashboard/market/catalog", icon: <GridIcon /> },
+      { label: "Become a Seller", href: "/dashboard/market/sell", icon: <StoreIcon /> },
     ],
   },
 ];

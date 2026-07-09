@@ -7,7 +7,7 @@ import { isSecurityKiosk, canUsePermission } from "@/lib/authz/policy";
 // feature is reachable via the in-module subnav tabs.
 const MODULES = [
   {
-    title: "Cafetaria",
+    title: "Cafeteria",
     icon: "🍽️",
     href: "/dashboard/cafeteria/menu",
     accent: "bg-gold/20",

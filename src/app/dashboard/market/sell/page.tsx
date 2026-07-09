@@ -15,7 +15,7 @@ export default async function SellPage() {
   return (
     <div>
       <ModuleSubnav tabs={MARKET_TABS} />
-      <PageHeader title="Jadi Penjual" icon="🏪" />
+      <PageHeader title="Become a Seller" icon="🏪" />
 
       {status === "APPROVED" ? (
         <SellerDashboard products={await getMyProducts(actor.id)} />

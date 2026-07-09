@@ -12,12 +12,12 @@ export const CAFETERIA_TABS: Tab[] = [
   { label: "Feedback", href: "/dashboard/cafeteria/pengajuan" },
 ];
 export const PERMISSION_TABS: Tab[] = [
-  { label: "Izin Keluar Masuk", href: "/dashboard/permission/exit" },
-  { label: "Peminjaman Barang", href: "/dashboard/permission/borrow" },
+  { label: "Exit Permission", href: "/dashboard/permission/exit" },
+  { label: "Borrow Items", href: "/dashboard/permission/borrow" },
 ];
 export const MARKET_TABS: Tab[] = [
-  { label: "Katalog Produk", href: "/dashboard/market/catalog" },
-  { label: "Jadi Penjual", href: "/dashboard/market/sell" },
+  { label: "Product Catalog", href: "/dashboard/market/catalog" },
+  { label: "Become a Seller", href: "/dashboard/market/sell" },
 ];
 
 // Sub-navigation shown inside a module so users can switch between its two features.

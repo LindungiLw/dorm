@@ -8,9 +8,9 @@ import { ModuleSubnav, CAFETERIA_TABS } from "@/components/ModuleSubnav";
 import { SelfCheckinCard } from "@/components/SelfCheckinCard";
 
 function statusLabelFor(memberType: string): string {
-  if (memberType === "LECTURER") return "Dosen Aktif";
-  if (memberType === "STAFF" || memberType === "FACULTY") return "Staf Aktif";
-  return "Mahasiswa Aktif";
+  if (memberType === "LECTURER") return "Active Lecturer";
+  if (memberType === "STAFF" || memberType === "FACULTY") return "Active Staff";
+  return "Active Student";
 }
 
 function initialsOf(name: string): string {
