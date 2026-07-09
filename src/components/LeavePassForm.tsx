@@ -15,7 +15,7 @@ export function LeavePassForm() {
     {},
   );
   return (
-    <form action={action} className="space-y-3">
+    <form action={action} className="space-y-4">
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.ok && <Alert tone="success">{state.ok}</Alert>}
 
@@ -26,7 +26,7 @@ export function LeavePassForm() {
         <input
           id="destination"
           name="destination"
-          className="input"
+          className="input text-base sm:text-sm"
           placeholder="e.g. Family home, city centre…"
           required
         />
@@ -40,7 +40,7 @@ export function LeavePassForm() {
           id="returnAt"
           name="returnAt"
           type="datetime-local"
-          className="input"
+          className="input min-h-[2.75rem] w-full text-base sm:text-sm"
           required
         />
         <p className="mt-1 text-xs text-navy-400">
@@ -50,9 +50,14 @@ export function LeavePassForm() {
 
       <LocationField label="Your location now (leaving the dorm)" />
 
-      <SubmitButton className="btn-primary" pendingText="Submitting…">
-        Submit
-      </SubmitButton>
+      <div className="flex justify-center pt-1 sm:justify-start">
+        <SubmitButton
+          className="btn-primary w-full sm:w-auto sm:px-8"
+          pendingText="Submitting…"
+        >
+          Submit
+        </SubmitButton>
+      </div>
     </form>
   );
 }

@@ -34,7 +34,7 @@ export function LocationField({ label }: { label: string }) {
           type="button"
           onClick={capture}
           disabled={status === "loading"}
-          className="btn-outline text-sm"
+          className="btn-outline w-full justify-center text-sm sm:w-auto"
         >
           <PinIcon />
           {status === "loading"
