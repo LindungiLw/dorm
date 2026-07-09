@@ -26,7 +26,9 @@ export default async function ExitPermissionPage() {
   }
 
   const passes = await getOwnExitRequests(actor.id);
-  const isOut = passes.some((p) => p.status === "OUT");
+  const latest = passes[0]; // newest first
+  const isOut = latest?.status === "OUT";
+  const justReturned = latest?.status === "RETURNED";
 
   return (
     <div>
@@ -49,20 +51,59 @@ export default async function ExitPermissionPage() {
           <LeavePassForm />
         </Card>
 
-        {/* Coming back — return is recorded by dorm staff, not the student */}
+        {/* Coming back — the return is recorded by security / dorm staff, not the student */}
         <Card>
-          <h2 className="mb-1 font-semibold text-navy-800">Coming back</h2>
+          <h2 className="mb-3 font-semibold text-navy-800">Coming back</h2>
           {isOut ? (
-            <Alert tone="info">
-              You&rsquo;re currently marked <strong>Out</strong>. When you reach the
-              dorm, the <strong>dorm staff / security</strong> will mark you as
-              returned — there&rsquo;s nothing to do here.
-            </Alert>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
+                </span>
+                <p className="font-semibold text-amber-800">Still outside</p>
+              </div>
+              <p className="mt-2 text-sm text-amber-700">
+                You are still outside. The <strong>security (satpam)</strong> or{" "}
+                <strong>dorm staff</strong> will mark you returned once you arrive back
+                at campus.
+              </p>
+              {latest?.destination && (
+                <p className="mt-2 text-xs text-amber-600">
+                  📍 {latest.destination} · back by {formatDateTime(latest.returnAt)}
+                </p>
+              )}
+            </div>
+          ) : justReturned ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-7 w-7 text-emerald-600"
+                  aria-hidden
+                >
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <p className="mt-3 font-bold text-emerald-800">Back at campus</p>
+              <p className="text-sm text-emerald-700">Welcome back!</p>
+              {latest?.actualReturnAt && (
+                <p className="mt-1 text-xs text-emerald-600">
+                  Marked returned {formatDateTime(latest.actualReturnAt)}
+                </p>
+              )}
+            </div>
           ) : (
             <p className="text-sm text-navy-500">
-              Once you submit a Leave Pass you&rsquo;ll be marked <strong>Out</strong>.
-              Your return is recorded by the <strong>dorm staff / security</strong>{" "}
-              when you arrive back — students can&rsquo;t press return.
+              Submit a Leave Pass and you will be marked <strong>Out</strong>. Your return
+              is recorded by the <strong>security (satpam)</strong> or{" "}
+              <strong>dorm staff</strong> when you arrive back. Students can&rsquo;t press
+              return.
             </p>
           )}
         </Card>

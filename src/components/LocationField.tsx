@@ -45,7 +45,7 @@ export function LocationField({ label }: { label: string }) {
       </button>
       {coords && (
         <>
-          <MapPreview lat={coords.lat} lng={coords.lng} className="mt-3" />
+          <MapPreview lat={coords.lat} lng={coords.lng} className="mt-3" eager />
           <p className="mt-1.5 text-xs font-medium text-emerald-600">
             Location captured. Submit to save it.
           </p>
