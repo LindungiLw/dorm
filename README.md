@@ -28,7 +28,7 @@ Then open **http://localhost:3000** and sign in. All demo accounts use the passw
 | `dewa@jiu.ac` | Faculty |
 | `rina.cafe@jiu.ac` | Cafeteria Admin (Outlet Main) |
 | `budi.dorm@jiu.ac` | Dormitory Admin (Dorm A) |
-| `sari.acad@jiu.ac` | Academic Admin |
+| `dyah23@jiu.ac` | Academic Admin |
 
 Handy scripts: `npm run db:reset` (wipe + reseed), `npm run build && npm start` (prod).
 
