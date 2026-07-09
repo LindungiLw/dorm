@@ -27,15 +27,15 @@ export function LoginForm({
       )}
 
       {/* Google SSO (campus @jiu.ac only) */}
-      <form action={googleSignInAction}>
+      <form action={googleSignInAction} className="flex justify-center">
         <button
           type="submit"
           disabled={!googleEnabled}
-          className="btn-outline w-full"
+          className="inline-flex max-w-full items-center justify-center gap-2.5 rounded-xl border border-navy-200 bg-white px-5 py-2.5 text-sm font-semibold text-navy-700 shadow-sm transition hover:border-navy-300 hover:bg-navy-50 disabled:cursor-not-allowed disabled:opacity-60"
           title={googleEnabled ? undefined : "Add Google OAuth keys to .env to enable"}
         >
           <GoogleGlyph />
-          Continue with campus Google
+          Continue with Google Campus
         </button>
       </form>
       {!googleEnabled && (
@@ -93,7 +93,7 @@ export function LoginForm({
 
 function GoogleGlyph() {
   return (
-    <svg className="h-4 w-4" viewBox="0 0 48 48" aria-hidden>
+    <svg className="h-5 w-5 shrink-0" viewBox="0 0 48 48" aria-hidden>
       <path
         fill="#EA4335"
         d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
