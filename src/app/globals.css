@@ -117,26 +117,30 @@ body {
   }
 }
 
-/* Dropdowns render as a bordered button with a consistent chevron (native <select> looks
-   different on every phone). */
+/* Every dropdown (native <select>) renders as the SAME bordered button with a consistent
+   chevron, since the native control looks different on every phone/browser. */
 select.input {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  min-height: 2.6rem;
   padding-right: 2.5rem;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231e2f6d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.7rem center;
-  background-size: 1.1rem;
+  background-position: right 0.75rem center;
+  background-size: 1.2rem;
   cursor: pointer;
 }
 
-/* On phones, 16px form controls stop iOS zoom-on-focus and give a comfier tap target. */
+/* On phones, 16px form controls stop iOS zoom-on-focus; a taller box is a comfier tap
+   target and lines dropdowns up with the buttons next to them. */
 @media (max-width: 639px) {
   .input {
     font-size: 1rem;
   }
   select.input {
-    min-height: 2.75rem;
+    min-height: 2.9rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
   }
 }
