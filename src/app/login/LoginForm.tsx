@@ -15,6 +15,9 @@ export function LoginForm({
   const [state, formAction] = useActionState<LoginState, FormData>(loginAction, {});
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Google is the primary sign in. Email/password stays as a fallback (dev + emergency),
+  // hidden behind a toggle, but shown by default when Google isn't configured.
+  const [showEmail, setShowEmail] = useState(!googleEnabled);
 
   const error = state.error ?? initialError;
 
@@ -26,67 +29,77 @@ export function LoginForm({
         </div>
       )}
 
-      {/* Google SSO (campus @jiu.ac only) */}
-      <form action={googleSignInAction} className="flex justify-center">
-        <button
-          type="submit"
-          disabled={!googleEnabled}
-          className="inline-flex max-w-full items-center justify-center gap-2.5 rounded-xl border border-navy-200 bg-white px-5 py-2.5 text-sm font-semibold text-navy-700 shadow-sm transition hover:border-navy-300 hover:bg-navy-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title={googleEnabled ? undefined : "Add Google OAuth keys to .env to enable"}
-        >
-          <GoogleGlyph />
-          Continue with Google Campus
-        </button>
-      </form>
+      {/* Primary: campus Google sign in */}
+      <div className="flex flex-col items-center">
+        <form action={googleSignInAction}>
+          <button
+            type="submit"
+            disabled={!googleEnabled}
+            className="inline-flex items-center gap-3 rounded-2xl border border-navy-200 bg-white px-8 py-3 text-base font-semibold text-navy-800 shadow-sm transition hover:border-navy-300 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            title={googleEnabled ? undefined : "Add Google OAuth keys to .env to enable"}
+          >
+            <GoogleGlyph />
+            Login
+          </button>
+        </form>
+        <p className="mt-2.5 text-xs text-navy-400">using your campus account</p>
+      </div>
+
       {!googleEnabled && (
-        <p className="mt-2 text-center text-xs text-navy-400">
-          Google SSO activates once <code>GOOGLE_CLIENT_ID</code> /{" "}
+        <p className="mt-3 text-center text-xs text-navy-400">
+          Google sign in activates once <code>GOOGLE_CLIENT_ID</code> /{" "}
           <code>GOOGLE_CLIENT_SECRET</code> are set.
         </p>
       )}
 
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-navy-100" />
-        <span className="text-xs text-navy-400">or</span>
-        <span className="h-px flex-1 bg-navy-100" />
+      {/* Fallback: email + password, tucked behind a small toggle */}
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={() => setShowEmail((s) => !s)}
+          className="text-xs font-medium text-navy-400 transition hover:text-navy-600 hover:underline"
+        >
+          {showEmail ? "Hide email sign in" : "Sign in with email instead"}
+        </button>
       </div>
 
-      {/* Credentials (stand-in until SSO keys are added) */}
-      <form action={formAction} className="space-y-4">
-        <div>
-          <label className="label" htmlFor="email">
-            Campus email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="username"
-            className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="label" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            className="input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <SubmitButton className="btn-primary w-full" pendingText="Signing in…">
-          Sign in
-        </SubmitButton>
-      </form>
+      {showEmail && (
+        <form action={formAction} className="mt-4 space-y-4">
+          <div>
+            <label className="label" htmlFor="email">
+              Campus email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              className="input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <SubmitButton className="btn-primary w-full" pendingText="Signing in…">
+            Sign in
+          </SubmitButton>
+        </form>
+      )}
     </div>
   );
 }
