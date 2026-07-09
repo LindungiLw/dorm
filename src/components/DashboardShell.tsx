@@ -42,7 +42,7 @@ export function DashboardShell({
             adminHref={user.adminHref}
           />
           {/* Mobile: bottom module pill + the active module's icon sub-menu on the side */}
-          <MobileNav />
+          <MobileNav isAdmin={user.isAdmin} adminHref={user.adminHref} />
           <SubMenuCapsule />
         </>
       )}

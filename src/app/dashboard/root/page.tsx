@@ -1,21 +1,16 @@
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole } from "@/lib/authz/policy";
 import { getAdmins } from "@/lib/domain/admins";
-import { PageHeader, Card, Alert } from "@/components/ui";
+import { PageHeader, Card } from "@/components/ui";
 import { RootAdminManager } from "@/components/RootAdminManager";
 
 export default async function RootPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  if (!hasRole(actor, "ROOT")) {
-    return (
-      <div>
-        <PageHeader title="Root" icon="🛡️" />
-        <Alert tone="info">This area is for the root super-admin only.</Alert>
-      </div>
-    );
-  }
+  // Only the ROOT super-admin may see this — others are bounced home silently.
+  if (!hasRole(actor, "ROOT")) redirect("/dashboard");
 
   const admins = await getAdmins();
 

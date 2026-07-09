@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole } from "@/lib/authz/policy";
 import { prisma } from "@/lib/db";
@@ -9,20 +10,14 @@ import {
   getCafeteriaFeedback,
   type FeedbackItem,
 } from "@/lib/domain/cafeteria-admin";
-import { PageHeader, Card, Alert } from "@/components/ui";
+import { PageHeader, Card } from "@/components/ui";
 
 export default async function CafeteriaAdminPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  if (!hasRole(actor, "CAFETERIA_ADMIN")) {
-    return (
-      <div>
-        <PageHeader title="Cafeteria" icon="📋" />
-        <Alert tone="info">This area is for cafeteria administrators.</Alert>
-      </div>
-    );
-  }
+  // Cafeteria admins only — others are bounced home silently.
+  if (!hasRole(actor, "CAFETERIA_ADMIN")) redirect("/dashboard");
 
   const today = todayStr();
 

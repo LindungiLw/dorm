@@ -1,7 +1,8 @@
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole, scopesFor } from "@/lib/authz/policy";
 import { getDormRequests } from "@/lib/domain/permissions";
-import { PageHeader, Card, StatusBadge, Alert } from "@/components/ui";
+import { PageHeader, Card, StatusBadge } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
 import { ReturnButton } from "@/components/ReturnButton";
 
@@ -13,14 +14,8 @@ export default async function DormAdminPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  if (!hasRole(actor, "DORMITORY_ADMIN")) {
-    return (
-      <div>
-        <PageHeader title="Dorm Access" icon="🗂️" />
-        <Alert tone="info">This area is for dormitory administrators.</Alert>
-      </div>
-    );
-  }
+  // Dorm admins only — others are bounced home silently.
+  if (!hasRole(actor, "DORMITORY_ADMIN")) redirect("/dashboard");
 
   const scopeIds = scopesFor(actor, "DORMITORY_ADMIN");
   const requests = await getDormRequests(scopeIds);

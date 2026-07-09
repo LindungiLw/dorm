@@ -1,21 +1,16 @@
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole } from "@/lib/authz/policy";
 import { prisma } from "@/lib/db";
-import { PageHeader, Card, Alert } from "@/components/ui";
+import { PageHeader, Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
 
 export default async function AcademicAdminPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  if (!hasRole(actor, "ACADEMIC_ADMIN")) {
-    return (
-      <div>
-        <PageHeader title="Academic" icon="📊" />
-        <Alert tone="info">This area is for academic administrators.</Alert>
-      </div>
-    );
-  }
+  // Academic admins only — others are bounced home silently.
+  if (!hasRole(actor, "ACADEMIC_ADMIN")) redirect("/dashboard");
 
   const [students, faculty, suspended, exitTotal, redemptions, audit] =
     await Promise.all([

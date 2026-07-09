@@ -1,21 +1,16 @@
+import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { can } from "@/lib/authz/policy";
 import { getPendingSellerRequests } from "@/lib/domain/seller";
-import { PageHeader, Card, Alert } from "@/components/ui";
+import { PageHeader, Card } from "@/components/ui";
 import { SellerReview } from "@/components/SellerReview";
 
 export default async function MarketAdminPage() {
   const actor = await getCurrentActor();
   if (!actor) return null;
 
-  if (!can(actor, "market:manage")) {
-    return (
-      <div>
-        <PageHeader title="Market Admin" icon="🛍️" />
-        <Alert tone="info">This area is for market administrators.</Alert>
-      </div>
-    );
-  }
+  // Market admins only — others are bounced home silently.
+  if (!can(actor, "market:manage")) redirect("/dashboard");
 
   const requests = await getPendingSellerRequests();
 

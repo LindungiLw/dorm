@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MODULES } from "@/components/nav";
+import { MODULES, GaugeIcon } from "@/components/nav";
 
 // MOBILE-ONLY main-module nav: a floating icon pill pinned to the bottom-centre of the
 // viewport (so it never scrolls with the page). The per-module sub-menu lives in the
-// side capsule (see SubMenuCapsule).
-export function MobileNav() {
+// side capsule (see SubMenuCapsule). Admins get an extra gauge icon to their own console.
+export function MobileNav({
+  isAdmin = false,
+  adminHref,
+}: {
+  isAdmin?: boolean;
+  adminHref?: string;
+}) {
   const pathname = usePathname();
   const inModule = (base: string) => pathname.startsWith(base);
 
@@ -36,6 +42,26 @@ export function MobileNav() {
             </Link>
           );
         })}
+
+        {/* Admin console — only for admins granted by ROOT */}
+        {isAdmin && adminHref && (
+          <>
+            <span className="mx-0.5 h-6 w-px bg-navy-100" aria-hidden />
+            <Link
+              href={adminHref}
+              aria-label="Admin"
+              title="Admin"
+              aria-current={pathname === adminHref ? "page" : undefined}
+              className={`flex h-11 w-11 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-400 focus-visible:ring-offset-1 ${
+                pathname === adminHref
+                  ? "bg-navy-700 text-white"
+                  : "text-navy-500 hover:bg-navy-50 hover:text-navy-700"
+              }`}
+            >
+              <GaugeIcon />
+            </Link>
+          </>
+        )}
       </nav>
     </div>
   );
