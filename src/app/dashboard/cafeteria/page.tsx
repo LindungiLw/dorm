@@ -4,13 +4,23 @@ import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/auth/session";
 import { hasRole } from "@/lib/authz/policy";
 import { prisma } from "@/lib/db";
-import { MEAL_TYPES, mealLabel, todayStr, formatDateTime } from "@/lib/time";
+import {
+  MEAL_TYPES,
+  mealLabel,
+  todayStr,
+  formatDateTime,
+  formatClock,
+} from "@/lib/time";
 import { getMenuForDates } from "@/lib/domain/menu";
+import { getMealWindows } from "@/lib/domain/meal-window";
 import {
   getCafeteriaFeedback,
+  getTodaysCheckins,
   type FeedbackItem,
+  type CheckinRecord,
 } from "@/lib/domain/cafeteria-admin";
 import { PageHeader, Card } from "@/components/ui";
+import { MealWindowSettings } from "@/components/MealWindowSettings";
 
 export default async function CafeteriaAdminPage() {
   const actor = await getCurrentActor();
@@ -21,15 +31,18 @@ export default async function CafeteriaAdminPage() {
 
   const today = todayStr();
 
-  const [redeemedToday, menuMap, allergensCount, feedback] = await Promise.all([
-    // Live attendance = a projection over the redemption ledger for today.
-    prisma.redemption.count({
-      where: { redeemedAt: { gte: new Date(`${today}T00:00:00`) } },
-    }),
-    getMenuForDates([today]),
-    prisma.allergenEntry.count(),
-    getCafeteriaFeedback(20),
-  ]);
+  const [redeemedToday, menuMap, allergensCount, feedback, windows, checkins] =
+    await Promise.all([
+      // Live attendance = a projection over the redemption ledger for today.
+      prisma.redemption.count({
+        where: { redeemedAt: { gte: new Date(`${today}T00:00:00`) } },
+      }),
+      getMenuForDates([today]),
+      prisma.allergenEntry.count(),
+      getCafeteriaFeedback(20),
+      getMealWindows(),
+      getTodaysCheckins(50),
+    ]);
 
   const todaysMenu = menuMap[today] ?? {};
   const menuSet = MEAL_TYPES.filter((m) => todaysMenu[m]?.items?.trim()).length;
@@ -94,6 +107,27 @@ export default async function CafeteriaAdminPage() {
             </ul>
           </Card>
 
+          {/* Recent check-ins */}
+          <Card>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-navy-800">Recent check-ins</h2>
+              <span className="rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-semibold text-navy-700">
+                {redeemedToday} today
+              </span>
+            </div>
+            {checkins.length === 0 ? (
+              <p className="py-2 text-sm text-navy-400">
+                No check-ins today yet.
+              </p>
+            ) : (
+              <ul className="max-h-96 space-y-2 overflow-y-auto pr-1">
+                {checkins.map((c) => (
+                  <CheckinRow key={c.id} item={c} />
+                ))}
+              </ul>
+            )}
+          </Card>
+
           {/* Feedback inbox */}
           <Card>
             <div className="mb-3 flex items-center justify-between gap-2">
@@ -119,6 +153,12 @@ export default async function CafeteriaAdminPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Check-in window settings */}
+          <Card>
+            <h2 className="mb-3 font-semibold text-navy-800">Check-in window</h2>
+            <MealWindowSettings windows={windows} />
+          </Card>
+
           {/* Allergens */}
           <Card>
             <h2 className="mb-1 font-semibold text-navy-800">Allergens</h2>
@@ -163,7 +203,26 @@ function FeedbackRow({ item }: { item: FeedbackItem }) {
         <span className="text-xs text-navy-400">{formatDateTime(item.at)}</span>
       </div>
       <p className="mt-1.5 text-sm text-navy-700">{item.message}</p>
-      <p className="mt-1 text-xs text-navy-400">— {item.from}</p>
+      <p className="mt-1 text-xs text-navy-400">by {item.from}</p>
+    </li>
+  );
+}
+
+function CheckinRow({ item }: { item: CheckinRecord }) {
+  return (
+    <li className="flex items-center justify-between gap-2 rounded-xl border border-navy-50 p-2.5">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-navy-800">{item.name}</p>
+        <p className="text-xs text-navy-400">{item.campusId}</p>
+      </div>
+      <div className="shrink-0 text-right">
+        {item.meal && (
+          <span className="rounded-full bg-navy-100 px-2 py-0.5 text-xs font-semibold text-navy-700">
+            {mealLabel(item.meal)}
+          </span>
+        )}
+        <p className="mt-1 text-xs text-navy-400">{formatClock(item.at)} WIB</p>
+      </div>
     </li>
   );
 }

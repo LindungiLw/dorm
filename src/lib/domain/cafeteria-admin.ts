@@ -1,4 +1,42 @@
 import { prisma } from "@/lib/db";
+import { todayStr } from "@/lib/time";
+
+// Today's check-ins, newest first, read from the redemption ledger (the source of truth).
+export type CheckinRecord = {
+  id: string;
+  name: string;
+  campusId: string;
+  meal: string;
+  at: Date;
+};
+
+export async function getTodaysCheckins(limit = 60): Promise<CheckinRecord[]> {
+  const today = todayStr();
+  const rows = await prisma.redemption.findMany({
+    where: { redeemedAt: { gte: new Date(`${today}T00:00:00`) } },
+    orderBy: { redeemedAt: "desc" },
+    take: limit,
+    include: { coupon: { select: { mealType: true } } },
+  });
+  const memberIds = [...new Set(rows.map((r) => r.memberId))];
+  const members = memberIds.length
+    ? await prisma.member.findMany({
+        where: { id: { in: memberIds } },
+        select: { id: true, fullName: true, campusId: true },
+      })
+    : [];
+  const byId = new Map(members.map((m) => [m.id, m]));
+  return rows.map((r) => {
+    const m = byId.get(r.memberId);
+    return {
+      id: r.id,
+      name: m?.fullName ?? "Unknown",
+      campusId: m?.campusId ?? "",
+      meal: r.coupon?.mealType ?? "",
+      at: r.redeemedAt,
+    };
+  });
+}
 
 // Student cafeteria feedback / complaints are persisted as append-only audit entries
 // (see submitCafeteriaFeedbackAction). This reads them back for the admin inbox — no

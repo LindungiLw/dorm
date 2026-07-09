@@ -3,7 +3,12 @@
 import { useActionState, useEffect, useState } from "react";
 import { selfCheckInAction, type CheckinState } from "@/lib/domain/checkin-actions";
 import { Alert } from "@/components/ui";
-import { MEAL_WINDOWS, mealLabel, formatClock, type MealType } from "@/lib/time";
+import {
+  mealLabel,
+  formatClock,
+  type MealType,
+  type MealWindows,
+} from "@/lib/time";
 
 export function SelfCheckinCard({
   name,
@@ -15,6 +20,7 @@ export function SelfCheckinCard({
   redeemed,
   redeemedAt,
   initialSession,
+  windows,
 }: {
   name: string;
   nim: string;
@@ -25,6 +31,7 @@ export function SelfCheckinCard({
   redeemed: Record<string, boolean>;
   redeemedAt: Record<string, string>;
   initialSession: MealType;
+  windows: MealWindows;
 }) {
   const [state, action, pending] = useActionState<CheckinState, FormData>(
     selfCheckInAction,
@@ -42,7 +49,7 @@ export function SelfCheckinCard({
   const minutes = now ? now.getHours() * 60 + now.getMinutes() : null;
   const session: MealType =
     minutes === null ? initialSession : minutes < 15 * 60 ? "LUNCH" : "DINNER";
-  const w = MEAL_WINDOWS[session];
+  const w = windows[session];
   const inWindow = minutes !== null && minutes >= w.startMin && minutes < w.endMin;
 
   const checkedIn = redeemed[session] || !!state.ok;
@@ -101,7 +108,7 @@ export function SelfCheckinCard({
       <div className="flex items-center justify-between bg-navy-700 px-5 py-3 text-white">
         <span className="text-lg font-bold">{mealLabel(session)}</span>
         <span className="text-sm font-medium text-navy-100">
-          {w.start} - {w.end}
+          {w.start} to {w.end}
         </span>
       </div>
 
@@ -158,7 +165,7 @@ export function SelfCheckinCard({
           </form>
           {!inWindow && (
             <p className="mt-2 text-center text-xs text-navy-400">
-              Check-in opens {w.start}–{w.end}.
+              Check-in opens {w.start} to {w.end}.
             </p>
           )}
         </div>

@@ -155,6 +155,15 @@ model CafeteriaMenu {
   @@index([menuDate])
 }
 
+// Admin-configurable meal check-in windows, in campus-local minutes since midnight.
+// A missing row falls back to the code defaults (MEAL_WINDOWS in src/lib/time.ts).
+model MealWindow {
+  mealType  String   @id // LUNCH | DINNER
+  startMin  Int
+  endMin    Int
+  updatedAt DateTime @updatedAt
+}
+
 // The cafeteria's food-allergen list: each dish and the allergens it contains. Maintained
 // by cafeteria staff, read by everyone so members know what to avoid. Distinct from
 // Member.allergyInfo (a member's OWN allergies).

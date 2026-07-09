@@ -2,6 +2,7 @@ import { getCurrentActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { todayStr, currentMealType } from "@/lib/time";
 import { getMenuForDates } from "@/lib/domain/menu";
+import { getMealWindows } from "@/lib/domain/meal-window";
 import { PageHeader } from "@/components/ui";
 import { ModuleSubnav, CAFETERIA_TABS } from "@/components/ModuleSubnav";
 import { SelfCheckinCard } from "@/components/SelfCheckinCard";
@@ -25,7 +26,7 @@ export default async function CheckinPage() {
   if (!actor) return null;
 
   const today = todayStr();
-  const [extra, coupons, menuMap] = await Promise.all([
+  const [extra, coupons, menuMap, windows] = await Promise.all([
     prisma.member.findUnique({
       where: { id: actor.id },
       select: { campusId: true, photoUrl: true },
@@ -35,6 +36,7 @@ export default async function CheckinPage() {
       select: { mealType: true, status: true, redeemedAt: true },
     }),
     getMenuForDates([today]),
+    getMealWindows(),
   ]);
 
   const redeemed: Record<string, boolean> = {};
@@ -58,7 +60,7 @@ export default async function CheckinPage() {
       <PageHeader title="Meal Check-in" subtitle={`Today · ${today}`} icon="🍽️" />
       <SelfCheckinCard
         name={actor.fullName}
-        nim={extra?.campusId ?? "—"}
+        nim={extra?.campusId ?? "?"}
         statusLabel={statusLabelFor(actor.memberType)}
         photoUrl={extra?.photoUrl ?? null}
         initials={initialsOf(actor.fullName)}
@@ -66,6 +68,7 @@ export default async function CheckinPage() {
         redeemed={redeemed}
         redeemedAt={redeemedAt}
         initialSession={currentMealType()}
+        windows={windows}
       />
     </div>
   );

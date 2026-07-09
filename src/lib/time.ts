@@ -10,6 +10,15 @@ export const CAMPUS_TZ = "Asia/Jakarta";
 export const MEAL_TYPES = ["LUNCH", "DINNER"] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 
+// A resolved check-in window (defaults, or the admin-configured override from the DB).
+export type MealWindowConfig = {
+  startMin: number;
+  endMin: number;
+  start: string; // "HH:MM"
+  end: string; // "HH:MM"
+};
+export type MealWindows = Record<MealType, MealWindowConfig>;
+
 // Operating window per meal (campus-local, minutes since midnight).
 export const MEAL_WINDOWS: Record<
   MealType,
@@ -18,6 +27,20 @@ export const MEAL_WINDOWS: Record<
   LUNCH: { start: "12:00", end: "13:00", startMin: 12 * 60, endMin: 13 * 60 },
   DINNER: { start: "18:00", end: "19:00", startMin: 18 * 60, endMin: 19 * 60 },
 };
+
+// Minutes since midnight <-> "HH:MM" (for admin-configurable windows).
+export function minToHHMM(min: number): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(Math.floor(min / 60))}:${pad(min % 60)}`;
+}
+export function hhmmToMin(s: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(s).trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
 
 // Break a Date into campus-local (WIB) parts.
 function campusParts(d: Date): { date: string; hour: number; minute: number } {

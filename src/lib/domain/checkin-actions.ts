@@ -8,13 +8,12 @@ import { can } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
 import {
   MEAL_TYPES,
-  MEAL_WINDOWS,
   mealLabel,
   todayStr,
   currentMealType,
   nowCampusMinutes,
-  isWithinMealWindow,
 } from "@/lib/time";
+import { getMealWindows } from "@/lib/domain/meal-window";
 
 export type CheckinState = { error?: string; ok?: string; at?: string };
 
@@ -124,10 +123,11 @@ export async function selfCheckInAction(
   }
 
   const mealType = currentMealType();
-  if (!isWithinMealWindow(mealType, nowCampusMinutes())) {
-    const w = MEAL_WINDOWS[mealType];
+  const w = (await getMealWindows())[mealType];
+  const nowMin = nowCampusMinutes();
+  if (nowMin < w.startMin || nowMin >= w.endMin) {
     return {
-      error: `Check-in for ${mealLabel(mealType)} is only open ${w.start}–${w.end}.`,
+      error: `Check-in for ${mealLabel(mealType)} is only open ${w.start} to ${w.end}.`,
     };
   }
 
