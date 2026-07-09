@@ -30,32 +30,33 @@ export function MobileNav({ consoles = [] }: { consoles?: AdminConsole[] }) {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
       <nav
         aria-label="Menu"
-        className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-navy-100 bg-white/95 p-1.5 shadow-lg backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none]"
+        className="pointer-events-auto flex max-w-[calc(100vw-1.5rem)] items-center gap-1 rounded-full border border-navy-100 bg-white/95 p-1.5 shadow-lg backdrop-blur"
       >
-        {/* Home — back to the module picker (where you switch modules) */}
-        <Link href="/dashboard" aria-label="Home" title="Home" className={item(false)}>
-          <HomeIcon />
-        </Link>
+        {/* Home + the active module's sub-menu (scrolls sideways if it runs long) */}
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none]">
+          <Link href="/dashboard" aria-label="Home" title="Home" className={item(false)}>
+            <HomeIcon />
+          </Link>
+          {subs.length > 0 && divider}
+          {subs.map((s) => {
+            const on = pathname === s.href;
+            return (
+              <Link
+                key={s.href}
+                href={s.href}
+                aria-label={s.label}
+                title={s.label}
+                aria-current={on ? "page" : undefined}
+                className={item(on)}
+              >
+                {s.icon}
+              </Link>
+            );
+          })}
+        </div>
 
-        {/* The active module's sub-menu */}
-        {subs.length > 0 && divider}
-        {subs.map((s) => {
-          const on = pathname === s.href;
-          return (
-            <Link
-              key={s.href}
-              href={s.href}
-              aria-label={s.label}
-              title={s.label}
-              aria-current={on ? "page" : undefined}
-              className={item(on)}
-            >
-              {s.icon}
-            </Link>
-          );
-        })}
-
-        {/* Admin console(s) — only for admins granted by ROOT */}
+        {/* Admin console(s) — kept OUTSIDE the scroll area so its picker can pop up without
+            being clipped. Only for admins granted by ROOT. */}
         {consoles.length > 0 && (
           <>
             {divider}
