@@ -140,6 +140,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               data: { photoUrl: picture },
             });
           }
+          // If this member was pre-provisioned by ROOT (name still a placeholder equal
+          // to the campusId), adopt their real Google name on first sign-in.
+          if (
+            p?.name &&
+            existing.fullName === existing.campusId &&
+            existing.fullName !== p.name
+          ) {
+            await prisma.member.update({
+              where: { id: existing.id },
+              data: { fullName: p.name },
+            });
+          }
           // Self-heal: the designated root account always keeps the ROOT role, even
           // if it was first provisioned (or seeded) as a plain student.
           if (ROOT_EMAILS.includes(email)) {

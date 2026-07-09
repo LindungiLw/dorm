@@ -1,12 +1,16 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getCurrentActor } from "@/lib/auth/session";
 import { can } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
+import { hashPassword } from "@/lib/auth/password";
 import { MANAGED_ROLES, ROLE_LABEL, type ManagedRole } from "@/lib/domain/admins";
+
+const ALLOWED_DOMAIN = "jiu.ac";
 
 export type RootState = { error?: string; ok?: string };
 
@@ -37,21 +41,44 @@ export async function grantRoleAction(
     return { error: "Only root can grant admin access." };
   }
 
+  // `dormId` is absent (null) for non-dorm roles; coerce to undefined so the optional
+  // schema accepts it (a raw null would fail as "expected string, received null").
   const parsed = grantSchema.safeParse({
-    email: formData.get("email"),
-    role: formData.get("role"),
-    dormId: formData.get("dormId"),
+    email: String(formData.get("email") ?? ""),
+    role: String(formData.get("role") ?? ""),
+    dormId: formData.get("dormId")?.toString() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
   const { email, role, dormId } = parsed.data;
 
-  const target = await prisma.member.findUnique({ where: { email } });
+  // Find the member, or PRE-PROVISION a stub for a campus email that hasn't signed in
+  // yet. When that person first logs in with Google (matched by email) they already
+  // hold the granted role. Only @jiu.ac accounts can ever log in, so restrict to those.
+  let target = await prisma.member.findUnique({ where: { email } });
   if (!target) {
-    return {
-      error: `No member "${email}" yet — ask them to sign in once first, then grant access.`,
-    };
+    if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+      return { error: `Use a campus @${ALLOWED_DOMAIN} email address.` };
+    }
+    const localPart = email.split("@")[0];
+    try {
+      target = await prisma.member.create({
+        data: {
+          memberType: "STUDENT",
+          fullName: localPart,
+          campusId: localPart,
+          email,
+          status: "ACTIVE",
+          dormId: "DORM-A",
+          passwordHash: await hashPassword(randomUUID()), // unusable (SSO only)
+        },
+      });
+    } catch {
+      return {
+        error: `Couldn't pre-register "${email}". It may clash with an existing ID; ask them to sign in once, then grant.`,
+      };
+    }
   }
 
   const { scopeType, scopeId } = scopeFor(role, dormId);
@@ -70,8 +97,9 @@ export async function grantRoleAction(
     grantedBy: actor.email,
   });
   revalidatePath("/dashboard/root");
+  const scopeLabel = scopeId ? ` (${scopeId.replace(/-/g, " ")})` : "";
   return {
-    ok: `${target.fullName} is now ${ROLE_LABEL[role]}${scopeId ? ` (${scopeId})` : ""}.`,
+    ok: `${target.email} is now ${ROLE_LABEL[role]}${scopeLabel}.`,
   };
 }
 
