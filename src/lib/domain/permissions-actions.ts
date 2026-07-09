@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentActor } from "@/lib/auth/session";
 import { can } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
+import { parseCampusLocal } from "@/lib/time";
 
 export type ExitState = { error?: string; ok?: string };
 
@@ -17,10 +18,12 @@ function parseCoord(v: FormDataEntryValue | null): number | null {
 }
 
 // ---- Leave Pass: student self-notifies they are leaving the dorm --------------------
+// Required: destination, expected return time ("jam balik"), and a GPS location point.
+// Departure is "now" (submit time). The student CANNOT close their own pass — only dorm
+// staff / security mark the return (see markReturnedAction).
 const leaveSchema = z.object({
   destination: z.string().trim().min(2, "Where are you going?").max(200),
-  departureAt: z.string().min(1),
-  returnAt: z.string().min(1),
+  returnAt: z.string().min(1, "Enter your expected return time."),
 });
 
 export async function submitLeavePassAction(
@@ -35,30 +38,30 @@ export async function submitLeavePassAction(
 
   const parsed = leaveSchema.safeParse({
     destination: formData.get("destination"),
-    departureAt: formData.get("departureAt"),
     returnAt: formData.get("returnAt"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
 
-  const departureAt = new Date(parsed.data.departureAt);
-  const returnAt = new Date(parsed.data.returnAt);
-  if (Number.isNaN(departureAt.getTime()) || Number.isNaN(returnAt.getTime())) {
-    return { error: "Please provide valid departure and expected-return times." };
+  const departureAt = new Date(); // leaving now
+  const returnAt = parseCampusLocal(parsed.data.returnAt);
+  if (!returnAt) {
+    return { error: "Please provide a valid expected-return time." };
   }
   if (returnAt <= departureAt) {
-    return { error: "Expected return must be after departure." };
+    return { error: "Your expected return must be in the future." };
   }
 
-  // One active pass at a time — log your return before leaving again.
+  // One active pass at a time — the dorm must mark you back before you leave again.
   const active = await prisma.exitRequest.findFirst({
     where: { memberId: actor.id, status: "OUT" },
     select: { id: true },
   });
   if (active) {
     return {
-      error: "You still have an active leave pass — submit your Return Pass first.",
+      error:
+        "You still have an active leave pass — the dorm must mark you returned first.",
     };
   }
 
@@ -82,50 +85,43 @@ export async function submitLeavePassAction(
   return { ok: "Leave pass logged. Have a safe trip!" };
 }
 
-// ---- Return Pass: student logs their actual return to the dorm ----------------------
-const returnSchema = z.object({ actualReturnAt: z.string().min(1) });
-
-export async function submitReturnPassAction(
+// ---- Return: ONLY dorm staff / security may mark a student back at the dorm ----------
+export async function markReturnedAction(
   _prev: ExitState,
   formData: FormData,
 ): Promise<ExitState> {
   const actor = await getCurrentActor();
   if (!actor) return { error: "Your session has expired. Please sign in again." };
 
-  const active = await prisma.exitRequest.findFirst({
-    where: { memberId: actor.id, status: "OUT" },
-    orderBy: { departureAt: "desc" },
-    select: { id: true },
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Missing pass id." };
+
+  const req = await prisma.exitRequest.findUnique({
+    where: { id },
+    select: { id: true, dormId: true, status: true },
   });
-  if (!active) {
-    return { error: "You have no active leave pass to close." };
+  if (!req) return { error: "Pass not found." };
+
+  // Role + dorm-scope check: only a DORMITORY_ADMIN for that dorm may mark a return.
+  if (!can(actor, "exit:decide", { dormId: req.dormId })) {
+    return { error: "Only dorm staff can mark a student returned." };
   }
 
-  const parsed = returnSchema.safeParse({
-    actualReturnAt: formData.get("actualReturnAt"),
-  });
-  if (!parsed.success) return { error: "Enter your return date & time." };
-
-  const actualReturnAt = new Date(parsed.data.actualReturnAt);
-  if (Number.isNaN(actualReturnAt.getTime())) {
-    return { error: "Please provide a valid return time." };
-  }
-
-  // Guarded transition: close only while still OUT (ownership enforced by memberId).
+  // Guarded transition: close only while still OUT.
   const upd = await prisma.exitRequest.updateMany({
-    where: { id: active.id, memberId: actor.id, status: "OUT" },
+    where: { id: req.id, status: "OUT" },
     data: {
       status: "RETURNED",
-      actualReturnAt,
-      returnLat: parseCoord(formData.get("lat")),
-      returnLng: parseCoord(formData.get("lng")),
+      actualReturnAt: new Date(),
+      decidedById: actor.id,
+      decidedAt: new Date(),
     },
   });
-  if (upd.count !== 1) return { error: "This pass was already closed." };
+  if (upd.count !== 1) return { error: "This student is already marked returned." };
 
-  await writeAudit(actor, "exit.return", "ExitRequest", active.id, {
-    dormId: actor.dormId,
+  await writeAudit(actor, "exit.return.admin", "ExitRequest", req.id, {
+    dormId: req.dormId,
   });
-  revalidatePath("/dashboard/permission/exit");
-  return { ok: "Welcome back! Your return has been logged." };
+  revalidatePath("/dashboard/dorm");
+  return { ok: "Marked returned." };
 }

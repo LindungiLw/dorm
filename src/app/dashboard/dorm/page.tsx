@@ -3,6 +3,7 @@ import { hasRole, scopesFor } from "@/lib/authz/policy";
 import { getDormRequests } from "@/lib/domain/permissions";
 import { PageHeader, Card, StatusBadge, Alert } from "@/components/ui";
 import { formatDateTime } from "@/lib/time";
+import { ReturnButton } from "@/components/ReturnButton";
 
 function mapLink(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
@@ -68,6 +69,7 @@ export default async function DormAdminPage() {
                   📍 Departure point
                 </a>
               )}
+              <ReturnButton id={r.id} />
             </Card>
           ))}
         </div>

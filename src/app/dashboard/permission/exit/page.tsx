@@ -1,10 +1,9 @@
 import { getCurrentActor } from "@/lib/auth/session";
-import { getOwnExitRequests, getActivePass } from "@/lib/domain/permissions";
+import { getOwnExitRequests } from "@/lib/domain/permissions";
 import { PageHeader, Card, StatusBadge, Alert } from "@/components/ui";
-import { formatDateTime, nowDatetimeLocal } from "@/lib/time";
+import { formatDateTime } from "@/lib/time";
 import { ModuleSubnav, PERMISSION_TABS } from "@/components/ModuleSubnav";
 import { LeavePassForm } from "@/components/LeavePassForm";
-import { ReturnPassForm } from "@/components/ReturnPassForm";
 
 function mapLink(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
@@ -25,10 +24,8 @@ export default async function ExitPermissionPage() {
     );
   }
 
-  const [passes, active] = await Promise.all([
-    getOwnExitRequests(actor.id),
-    getActivePass(actor.id),
-  ]);
+  const passes = await getOwnExitRequests(actor.id);
+  const isOut = passes.some((p) => p.status === "OUT");
 
   return (
     <div>
@@ -49,22 +46,21 @@ export default async function ExitPermissionPage() {
           <LeavePassForm />
         </Card>
 
-        {/* Return Pass */}
+        {/* Coming back — return is recorded by dorm staff, not the student */}
         <Card>
-          <h2 className="mb-1 font-semibold text-navy-800">Return Pass</h2>
-          {active ? (
-            <>
-              <p className="mb-3 text-sm text-navy-500">
-                Closing your pass to <strong>{active.destination}</strong> — left{" "}
-                {formatDateTime(active.departureAt)}.
-              </p>
-              <ReturnPassForm defaultReturn={nowDatetimeLocal()} />
-            </>
-          ) : (
+          <h2 className="mb-1 font-semibold text-navy-800">Coming back</h2>
+          {isOut ? (
             <Alert tone="info">
-              No active leave pass. Submit a Leave Pass first, then log your return
-              here when you&rsquo;re back.
+              You&rsquo;re currently marked <strong>Out</strong>. When you reach the
+              dorm, the <strong>dorm staff / security</strong> will mark you as
+              returned — there&rsquo;s nothing to do here.
             </Alert>
+          ) : (
+            <p className="text-sm text-navy-500">
+              Once you submit a Leave Pass you&rsquo;ll be marked <strong>Out</strong>.
+              Your return is recorded by the <strong>dorm staff / security</strong>{" "}
+              when you arrive back — students can&rsquo;t press return.
+            </p>
           )}
         </Card>
       </div>

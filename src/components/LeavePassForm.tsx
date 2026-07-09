@@ -32,34 +32,23 @@ export function LeavePassForm() {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="departureAt">
-            Departure
-          </label>
-          <input
-            id="departureAt"
-            name="departureAt"
-            type="datetime-local"
-            className="input"
-            required
-          />
-        </div>
-        <div>
-          <label className="label" htmlFor="returnAt">
-            Expected Return
-          </label>
-          <input
-            id="returnAt"
-            name="returnAt"
-            type="datetime-local"
-            className="input"
-            required
-          />
-        </div>
+      <div>
+        <label className="label" htmlFor="returnAt">
+          Expected return (jam balik)
+        </label>
+        <input
+          id="returnAt"
+          name="returnAt"
+          type="datetime-local"
+          className="input"
+          required
+        />
+        <p className="mt-1 text-xs text-navy-400">
+          Departure time is logged automatically when you submit.
+        </p>
       </div>
 
-      <LocationField label="Departure location (leaving the dorm)" />
+      <LocationField label="Your location now (leaving the dorm)" />
 
       <SubmitButton className="btn-primary" pendingText="Submitting…">
         Submit
