@@ -142,11 +142,11 @@ export const MODULES: ModuleDef[] = [
     key: "cafeteria",
     label: "Cafetaria",
     base: "/dashboard/cafeteria",
-    primary: "/dashboard/cafeteria/allergy",
+    primary: "/dashboard/cafeteria/menu",
     icon: <QrIcon />,
     sub: [
-      { label: "Allergy", href: "/dashboard/cafeteria/allergy", icon: <AllergyIcon /> },
       { label: "Menu", href: "/dashboard/cafeteria/menu", icon: <UtensilsIcon /> },
+      { label: "Allergy", href: "/dashboard/cafeteria/allergy", icon: <AllergyIcon /> },
       { label: "Check-in", href: "/dashboard/cafeteria/checkin", icon: <ScanIcon /> },
       { label: "Feedback", href: "/dashboard/cafeteria/pengajuan", icon: <DocIcon /> },
     ],

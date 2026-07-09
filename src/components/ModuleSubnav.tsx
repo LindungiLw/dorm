@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 export type Tab = { label: string; href: string };
 
 export const CAFETERIA_TABS: Tab[] = [
-  { label: "Allergy", href: "/dashboard/cafeteria/allergy" },
   { label: "Menu", href: "/dashboard/cafeteria/menu" },
+  { label: "Allergy", href: "/dashboard/cafeteria/allergy" },
   { label: "Check-in", href: "/dashboard/cafeteria/checkin" },
   { label: "Feedback", href: "/dashboard/cafeteria/pengajuan" },
 ];
