@@ -12,6 +12,14 @@ body {
   @apply antialiased;
 }
 
+/* App-like scrolling: stop the rubber-band overscroll/bounce at the top and bottom on
+   mobile (and pull-to-refresh chaining), so a short page feels fixed instead of bouncing
+   when there is nothing more to scroll above or below. */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 @layer components {
   .card {
     @apply rounded-xl border border-navy-100 bg-white p-5 shadow-card;
