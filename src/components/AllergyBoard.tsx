@@ -1,15 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
   addAllergenAction,
   updateAllergenAction,
   deleteAllergenAction,
+  saveFoodChoicesAction,
   type AllergyState,
 } from "@/lib/domain/allergy-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Alert } from "@/components/ui";
-import type { AllergenRow } from "@/lib/domain/allergy";
+import type { AllergenRow, FoodChoice, FoodChoiceMap } from "@/lib/domain/allergy";
 
 // ── Admin: add a food name ───────────────────────────────────────────────────────────
 function AddAllergenForm() {
@@ -97,88 +98,138 @@ function AllergenRowEditor({ entry }: { entry: AllergenRow }) {
   );
 }
 
-// ── Student: mark each listed food as Safe or Avoid (saved on this device) ────────────
-type Choice = "safe" | "avoid";
+// ── Student: mark each listed food as Safe or Avoid (saved to their account) ──────────
+function sameChoices(a: FoodChoiceMap, b: FoodChoiceMap): boolean {
+  const ak = Object.keys(a);
+  if (ak.length !== Object.keys(b).length) return false;
+  return ak.every((k) => a[k] === b[k]);
+}
 
-function StudentAllergyList({ entries }: { entries: AllergenRow[] }) {
-  const [choices, setChoices] = useState<Record<string, Choice>>({});
-  const [loaded, setLoaded] = useState(false);
+function StudentAllergyList({
+  entries,
+  initialChoices,
+}: {
+  entries: AllergenRow[];
+  initialChoices: FoodChoiceMap;
+}) {
+  const [choices, setChoices] = useState<FoodChoiceMap>(initialChoices);
+  // What's currently persisted on the server — the baseline for "unsaved changes".
+  const [saved, setSaved] = useState<FoodChoiceMap>(initialChoices);
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<AllergyState>({});
 
-  useEffect(() => {
-    try {
-      const s = localStorage.getItem("jiunity-food-choices");
-      if (s) setChoices(JSON.parse(s));
-    } catch {
-      /* ignore */
-    }
-    setLoaded(true);
-  }, []);
-  useEffect(() => {
-    if (loaded) {
-      try {
-        localStorage.setItem("jiunity-food-choices", JSON.stringify(choices));
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [choices, loaded]);
+  const dirty = !sameChoices(choices, saved);
+  // Count only foods still on the list, so a stale choice for a removed food never shows.
+  const avoidCount = entries.filter((e) => choices[e.id] === "avoid").length;
 
   // Tap a choice to set it; tap the same one again to clear it.
-  const pick = (id: string, c: Choice) =>
+  const pick = (id: string, c: FoodChoice) => {
+    setResult({});
     setChoices((prev) => {
       const next = { ...prev };
       if (next[id] === c) delete next[id];
       else next[id] = c;
       return next;
     });
+  };
+
+  const save = () => {
+    setResult({});
+    startTransition(async () => {
+      const res = await saveFoodChoicesAction(JSON.stringify(choices));
+      setResult(res);
+      if (res.ok) setSaved(choices);
+    });
+  };
 
   return (
-    <div className="space-y-2">
-      {entries.map((e) => {
-        const choice = choices[e.id];
-        return (
-          <div
-            key={e.id}
-            className="flex flex-col gap-2 rounded-xl border border-navy-100 p-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <p
-              className={`font-medium ${
+    <div className="space-y-4">
+      {/* Summary + feedback */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+          Avoiding {avoidCount} {avoidCount === 1 ? "food" : "foods"}
+        </span>
+        <span className="text-xs text-navy-400">
+          Tap Safe or Avoid, then save.
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {entries.map((e) => {
+          const choice = choices[e.id];
+          return (
+            <div
+              key={e.id}
+              className={`flex flex-col gap-2 rounded-xl border p-3 transition sm:flex-row sm:items-center sm:justify-between ${
                 choice === "avoid"
-                  ? "text-navy-400 line-through"
-                  : "text-navy-800"
+                  ? "border-red-200 bg-red-50/40"
+                  : choice === "safe"
+                    ? "border-emerald-200 bg-emerald-50/40"
+                    : "border-navy-100"
               }`}
             >
-              {e.food}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => pick(e.id, "safe")}
-                aria-pressed={choice === "safe"}
-                className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
-                  choice === "safe"
-                    ? "border-emerald-600 bg-emerald-600 text-white"
-                    : "border-navy-200 text-navy-600 hover:bg-navy-50"
-                }`}
-              >
-                ✓ Safe
-              </button>
-              <button
-                type="button"
-                onClick={() => pick(e.id, "avoid")}
-                aria-pressed={choice === "avoid"}
-                className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
+              <p
+                className={`font-medium ${
                   choice === "avoid"
-                    ? "border-red-600 bg-red-600 text-white"
-                    : "border-navy-200 text-navy-600 hover:bg-navy-50"
+                    ? "text-navy-400 line-through"
+                    : "text-navy-800"
                 }`}
               >
-                ✕ Avoid
-              </button>
+                {e.food}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => pick(e.id, "safe")}
+                  aria-pressed={choice === "safe"}
+                  className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
+                    choice === "safe"
+                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      : "border-navy-200 text-navy-600 hover:bg-navy-50"
+                  }`}
+                >
+                  ✓ Safe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => pick(e.id, "avoid")}
+                  aria-pressed={choice === "avoid"}
+                  className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-semibold transition sm:flex-none ${
+                    choice === "avoid"
+                      ? "border-red-600 bg-red-600 text-white"
+                      : "border-navy-200 text-navy-600 hover:bg-navy-50"
+                  }`}
+                >
+                  ✕ Avoid
+                </button>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+
+      {/* Save bar */}
+      <div className="flex flex-col gap-2 border-t border-navy-50 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-navy-400" aria-live="polite">
+          {result.error ? (
+            <span className="text-red-600">{result.error}</span>
+          ) : result.ok ? (
+            <span className="text-emerald-600">✓ {result.ok}</span>
+          ) : dirty ? (
+            "You have unsaved changes."
+          ) : (
+            "All changes saved."
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={save}
+          disabled={!dirty || pending}
+          className="btn-primary w-full sm:w-auto sm:px-8 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {pending ? "Saving…" : "Save my choices"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -186,9 +237,11 @@ function StudentAllergyList({ entries }: { entries: AllergenRow[] }) {
 export function AllergyBoard({
   entries,
   canEdit,
+  initialChoices,
 }: {
   entries: AllergenRow[];
   canEdit: boolean;
+  initialChoices: FoodChoiceMap;
 }) {
   if (canEdit) {
     return (
@@ -216,5 +269,5 @@ export function AllergyBoard({
       <p className="text-sm text-navy-400">No foods have been listed yet.</p>
     );
   }
-  return <StudentAllergyList entries={entries} />;
+  return <StudentAllergyList entries={entries} initialChoices={initialChoices} />;
 }

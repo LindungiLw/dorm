@@ -32,6 +32,9 @@ model Member {
   email        String   @unique
   status       String   @default("ACTIVE") // ACTIVE | SUSPENDED | INACTIVE
   allergyInfo  String? // JIUnity-owned, sensitive
+  // The member's own saved cafeteria food choices: a JSON map of AllergenEntry id ->
+  // "safe" | "avoid". Set from the Food Allergens page; follows the account across devices.
+  foodChoices  String? // JIUnity-owned, JSON
   photoUrl     String? // profile photo, stored as a small data URL (JIUnity-owned)
   dormId       String? // org-unit scope for dorm-scoped features
   // Last time the member was marked back at the dorm. The full ExitRequest is deleted on

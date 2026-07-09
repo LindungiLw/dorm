@@ -84,3 +84,41 @@ export async function deleteAllergenAction(
   revalidatePath("/dashboard/cafeteria/allergy");
   return { ok: "Removed." };
 }
+
+// ── Student: save my own food choices ────────────────────────────────────────────────
+// A map of AllergenEntry id -> "safe" | "avoid". Only the foods currently on the list are
+// kept, so choices for deleted foods are pruned as members re-save.
+const choiceSchema = z.record(z.string(), z.enum(["safe", "avoid"]));
+
+export async function saveFoodChoicesAction(choicesJson: string): Promise<AllergyState> {
+  const actor = await getCurrentActor();
+  if (!actor) return { error: "Your session has expired. Please sign in again." };
+  // Saving your own choices is an ownership action (your profile, your data).
+  if (!can(actor, "profile:updateAllergy", { ownerId: actor.id })) {
+    return { error: "You can't save choices right now." };
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(choicesJson);
+  } catch {
+    return { error: "Couldn't read your choices. Please try again." };
+  }
+  const parsed = choiceSchema.safeParse(raw);
+  if (!parsed.success) return { error: "Those choices look invalid." };
+
+  // Drop any ids that are no longer on the cafeteria's list.
+  const live = await prisma.allergenEntry.findMany({ select: { id: true } });
+  const liveIds = new Set(live.map((e) => e.id));
+  const clean: Record<string, "safe" | "avoid"> = {};
+  for (const [id, val] of Object.entries(parsed.data)) {
+    if (liveIds.has(id)) clean[id] = val;
+  }
+
+  await prisma.member.update({
+    where: { id: actor.id },
+    data: { foodChoices: JSON.stringify(clean) },
+  });
+  revalidatePath("/dashboard/cafeteria/allergy");
+  return { ok: "Your choices are saved." };
+}
