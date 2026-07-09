@@ -9,7 +9,7 @@ const MODULES = [
   {
     title: "Cafetaria",
     icon: "🍽️",
-    href: "/dashboard/cafeteria/allergy",
+    href: "/dashboard/cafeteria/menu",
     accent: "bg-gold/20",
   },
   {
