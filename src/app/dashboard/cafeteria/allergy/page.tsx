@@ -19,8 +19,8 @@ export default async function CafeteriaAllergyPage() {
         title="Food Allergens"
         subtitle={
           canEdit
-            ? "Maintain the list of dishes and the allergens each one contains"
-            : "Dishes served and the allergens they contain — check before you eat"
+            ? "Add the foods the cafeteria serves"
+            : "Mark the foods you can eat, or want to avoid"
         }
         icon="⚠️"
       />
@@ -31,7 +31,7 @@ export default async function CafeteriaAllergyPage() {
 
       {!canEdit && (
         <p className="mt-3 text-center text-xs text-navy-400">
-          This list is maintained by cafeteria staff.
+          Foods are listed by cafeteria staff. Your choices are saved on this device.
         </p>
       )}
     </div>

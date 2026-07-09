@@ -11,7 +11,6 @@ export type AllergyState = { error?: string; ok?: string };
 
 const entrySchema = z.object({
   food: z.string().trim().min(1, "Enter a food name.").max(120),
-  allergens: z.string().trim().min(1, "List the allergens.").max(200),
 });
 
 async function requireCafeteriaAdmin() {
@@ -31,15 +30,15 @@ export async function addAllergenAction(
   const { actor, error } = await requireCafeteriaAdmin();
   if (!actor) return { error };
 
-  const parsed = entrySchema.safeParse({
-    food: formData.get("food"),
-    allergens: formData.get("allergens"),
-  });
+  const parsed = entrySchema.safeParse({ food: formData.get("food") });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
 
-  const created = await prisma.allergenEntry.create({ data: parsed.data });
+  // `allergens` column stays (NOT NULL) but is unused now; store an empty string.
+  const created = await prisma.allergenEntry.create({
+    data: { food: parsed.data.food, allergens: "" },
+  });
   await writeAudit(actor, "cafeteria.allergen.add", "AllergenEntry", created.id, parsed.data);
   revalidatePath("/dashboard/cafeteria/allergy");
   return { ok: `Added "${parsed.data.food}".` };
@@ -54,16 +53,16 @@ export async function updateAllergenAction(
   if (!actor) return { error };
 
   const id = String(formData.get("id") ?? "");
-  const parsed = entrySchema.safeParse({
-    food: formData.get("food"),
-    allergens: formData.get("allergens"),
-  });
+  const parsed = entrySchema.safeParse({ food: formData.get("food") });
   if (!id) return { error: "Missing entry id." };
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
 
-  await prisma.allergenEntry.update({ where: { id }, data: parsed.data });
+  await prisma.allergenEntry.update({
+    where: { id },
+    data: { food: parsed.data.food },
+  });
   await writeAudit(actor, "cafeteria.allergen.update", "AllergenEntry", id, parsed.data);
   revalidatePath("/dashboard/cafeteria/allergy");
   return { ok: "Saved." };
