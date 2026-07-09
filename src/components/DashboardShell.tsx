@@ -49,7 +49,13 @@ export function DashboardShell({
 
       <header className="sticky top-0 z-40 border-b border-navy-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Logo />
+          <Link
+            href="/dashboard"
+            aria-label="Go to home"
+            className="rounded-lg transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-400"
+          >
+            <Logo />
+          </Link>
           <Link
             href="/dashboard/profile"
             aria-label="Open profile"
