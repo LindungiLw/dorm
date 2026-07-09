@@ -1,82 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  BORROW_CATEGORIES,
+  type BorrowItemRow,
+  type BorrowStatus,
+} from "@/lib/domain/borrow-types";
 
 /* ---------------------------------------------------------------------------
-   UI-ONLY borrow catalog. Static demo data (no backend borrowing logic yet);
-   this is purely a layout / UX pass. The Request button is a client-side
-   micro-interaction — it does not persist anything.
+   Student-facing borrow catalog. Items are maintained by the permission admin
+   (see BorrowManager) and read from the database. The Request button is still a
+   client-side micro-interaction — the borrowing workflow itself is not persisted.
 --------------------------------------------------------------------------- */
 
-type Status = "AVAILABLE" | "LIMITED" | "BORROWED";
-type Item = {
-  id: string;
-  name: string;
-  group: string;
-  cat: string;
-  emoji: string;
-  status: Status;
-  location: string;
-  schedule: string;
-  capacity?: number;
-  units?: number;
-  description: string;
-};
-
-const STATUS: Record<Status, { label: string; cls: string; dot: string }> = {
+const STATUS: Record<BorrowStatus, { label: string; cls: string; dot: string }> = {
   AVAILABLE: { label: "Available", cls: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
   LIMITED: { label: "Limited", cls: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
-  BORROWED: { label: "Borrowed", cls: "bg-red-50 text-red-700", dot: "bg-red-500" },
+  BORROWED: { label: "Unavailable", cls: "bg-red-50 text-red-700", dot: "bg-red-500" },
 };
 
-const CAT_LABEL: Record<string, string> = {
-  ROOM: "Study Room",
-  ELECTRONICS: "Electronics",
-  LAB: "Lab Komputer",
-  SPORTS: "Sports",
-  MUSIC: "Music",
-};
-
-const FILTERS = [
-  { key: "ALL", label: "All" },
-  { key: "ROOM", label: "Room" },
-  { key: "ELECTRONICS", label: "Electronics" },
-  { key: "LAB", label: "Lab Komputer" },
-  { key: "SPORTS", label: "Sports" },
-  { key: "FAV", label: "Favorites" },
-];
-
-const GROUP_ORDER = [
-  "Study Rooms",
-  "Electronics",
-  "Lab Komputer",
-  "Sports Equipment",
-  "Music Equipment",
-];
-
-const ITEMS: Item[] = [
-  { id: "room-a", name: "Study Room A", group: "Study Rooms", cat: "ROOM", emoji: "🚪", status: "AVAILABLE", location: "Building A · 2nd floor", schedule: "Mon–Fri, 08:00–20:00", capacity: 6, description: "Quiet room for small-group study — whiteboard and power outlets included." },
-  { id: "room-b", name: "Study Room B", group: "Study Rooms", cat: "ROOM", emoji: "🚪", status: "LIMITED", location: "Building A · 3rd floor", schedule: "Mon–Fri, 08:00–20:00", capacity: 10, description: "Larger room with a projector. Only a few slots left today." },
-  { id: "disc", name: "Discussion Room", group: "Study Rooms", cat: "ROOM", emoji: "🚪", status: "BORROWED", location: "Library · 1st floor", schedule: "Daily, 09:00–21:00", capacity: 8, description: "Currently in use — reserve it for a later slot." },
-  { id: "proj", name: "Projector", group: "Electronics", cat: "ELECTRONICS", emoji: "📽️", status: "AVAILABLE", location: "AV Storage", schedule: "Same-day pickup", units: 4, description: "Full-HD projector with HDMI & VGA. Cable kit included." },
-  { id: "spk", name: "Portable Speaker", group: "Electronics", cat: "ELECTRONICS", emoji: "🔊", status: "LIMITED", location: "AV Storage", schedule: "Same-day pickup", units: 2, description: "Bluetooth speaker for events — only two left." },
-  { id: "hdmi", name: "HDMI Cable Kit", group: "Electronics", cat: "ELECTRONICS", emoji: "🔌", status: "AVAILABLE", location: "AV Storage", schedule: "Same-day pickup", units: 12, description: "Assorted HDMI cables and adapters for presentations." },
-  { id: "lab1", name: "Computer Lab 1", group: "Lab Komputer", cat: "LAB", emoji: "💻", status: "AVAILABLE", location: "Building C · Lab wing", schedule: "Mon–Sat, 08:00–18:00", capacity: 30, description: "30-seat lab with dev tools. Book per session." },
-  { id: "laptop", name: "Loan Laptop", group: "Lab Komputer", cat: "LAB", emoji: "💻", status: "LIMITED", location: "IT Help Desk", schedule: "Return within 24h", units: 3, description: "Windows laptop for short-term loan." },
-  { id: "badm", name: "Badminton Set", group: "Sports Equipment", cat: "SPORTS", emoji: "🏸", status: "AVAILABLE", location: "Sports Hall", schedule: "Daily, 06:00–22:00", units: 5, description: "Rackets and shuttlecocks. Book the court separately." },
-  { id: "bball", name: "Basketball", group: "Sports Equipment", cat: "SPORTS", emoji: "🏀", status: "AVAILABLE", location: "Sports Hall", schedule: "Daily, 06:00–22:00", units: 8, description: "Standard size-7 basketball." },
-  { id: "yoga", name: "Yoga Mat", group: "Sports Equipment", cat: "SPORTS", emoji: "🧘", status: "BORROWED", location: "Sports Hall", schedule: "Daily, 06:00–22:00", units: 0, description: "All mats are checked out right now." },
-  { id: "guitar", name: "Acoustic Guitar", group: "Music Equipment", cat: "MUSIC", emoji: "🎸", status: "AVAILABLE", location: "Music Room", schedule: "Mon–Sun, 10:00–20:00", units: 3, description: "Well-kept acoustic guitar with a soft case." },
-  { id: "keys", name: "Keyboard Piano", group: "Music Equipment", cat: "MUSIC", emoji: "🎹", status: "LIMITED", location: "Music Room", schedule: "Mon–Sun, 10:00–20:00", units: 1, description: "61-key portable keyboard — one available." },
-  { id: "mic", name: "Microphone Set", group: "Music Equipment", cat: "MUSIC", emoji: "🎤", status: "AVAILABLE", location: "Music Room", schedule: "Mon–Sun, 10:00–20:00", units: 4, description: "Wireless mic set for performances." },
-];
-
-export function BorrowCatalog() {
+export function BorrowCatalog({ items }: { items: BorrowItemRow[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [favs, setFavs] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [selected, setSelected] = useState<Item | null>(null);
+  const [selected, setSelected] = useState<BorrowItemRow | null>(null);
 
   useEffect(() => {
     try {
@@ -100,23 +48,36 @@ export function BorrowCatalog() {
   const toggleFav = (id: string) =>
     setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
+  // Only offer category chips that actually have items.
+  const filters = useMemo(() => {
+    const present = new Set(items.map((it) => it.category));
+    return [
+      { key: "ALL", label: "All" },
+      ...BORROW_CATEGORIES.filter((c) => present.has(c.value)).map((c) => ({
+        key: c.value,
+        label: c.label,
+      })),
+      { key: "FAV", label: "Favorites" },
+    ];
+  }, [items]);
+
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = ITEMS.filter((it) => {
+    const filtered = items.filter((it) => {
       if (filter === "FAV" && !favs.includes(it.id)) return false;
-      if (filter !== "ALL" && filter !== "FAV" && it.cat !== filter) return false;
+      if (filter !== "ALL" && filter !== "FAV" && it.category !== filter) return false;
       if (!q) return true;
       return (
         it.name.toLowerCase().includes(q) ||
         it.location.toLowerCase().includes(q) ||
-        (CAT_LABEL[it.cat] ?? "").toLowerCase().includes(q)
+        it.categoryLabel.toLowerCase().includes(q)
       );
     });
-    return GROUP_ORDER.map((name) => ({
-      name,
-      items: filtered.filter((it) => it.group === name),
+    return BORROW_CATEGORIES.map((c) => ({
+      name: c.label,
+      items: filtered.filter((it) => it.category === c.value),
     })).filter((g) => g.items.length > 0);
-  }, [query, filter, favs]);
+  }, [items, query, filter, favs]);
 
   const empty = groups.length === 0;
 
@@ -133,13 +94,13 @@ export function BorrowCatalog() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search rooms & items…"
           aria-label="Search borrowable items"
-          className="w-full rounded-full border border-navy-200 bg-white py-2.5 pl-10 pr-4 text-sm text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
+          className="w-full rounded-full border border-navy-200 bg-white py-2.5 pl-10 pr-4 text-base text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-200 sm:text-sm"
         />
       </div>
 
       {/* Filter chips */}
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none]">
-        {FILTERS.map((f) => (
+        {filters.map((f) => (
           <button
             key={f.key}
             type="button"
@@ -156,7 +117,11 @@ export function BorrowCatalog() {
       </div>
 
       {/* Grouped sections */}
-      {empty ? (
+      {items.length === 0 ? (
+        <p className="py-12 text-center text-sm text-navy-400">
+          No items yet. Please check back soon.
+        </p>
+      ) : empty ? (
         <p className="py-12 text-center text-sm text-navy-400">
           No items found{query ? ` for “${query}”` : ""}.
         </p>
@@ -194,13 +159,27 @@ export function BorrowCatalog() {
   );
 }
 
+function Thumb({ it, className }: { it: BorrowItemRow; className: string }) {
+  if (it.imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={it.imageUrl} alt="" className={`object-cover ${className}`} />
+    );
+  }
+  return (
+    <span className={`flex items-center justify-center bg-navy-50 ${className}`}>
+      {it.emoji ?? "📦"}
+    </span>
+  );
+}
+
 function ItemCard({
   it,
   fav,
   onFav,
   onOpen,
 }: {
-  it: Item;
+  it: BorrowItemRow;
   fav: boolean;
   onFav: () => void;
   onOpen: () => void;
@@ -219,8 +198,8 @@ function ItemCard({
       }}
       className="group flex cursor-pointer flex-col overflow-hidden rounded-[22px] border border-navy-100 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
     >
-      <div className="relative flex aspect-[4/3] items-center justify-center bg-navy-50 text-5xl">
-        <span className="transition duration-200 group-hover:scale-105">{it.emoji}</span>
+      <div className="relative aspect-[4/3]">
+        <Thumb it={it} className="h-full w-full text-5xl transition duration-200 group-hover:scale-105" />
         <span
           className={`absolute right-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${s.cls}`}
         >
@@ -241,21 +220,18 @@ function ItemCard({
       </div>
       <div className="p-3">
         <h3 className="line-clamp-1 text-sm font-semibold text-navy-800">{it.name}</h3>
-        <p className="text-[11px] text-navy-400">{CAT_LABEL[it.cat] ?? it.cat}</p>
+        <p className="text-[11px] text-navy-400">{it.categoryLabel}</p>
         <div className="mt-2 space-y-1 text-[11px] text-navy-500">
+          {it.location && (
+            <span className="flex items-center gap-1.5">
+              <PinIcon /> <span className="line-clamp-1">{it.location}</span>
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
-            <PinIcon /> <span className="line-clamp-1">{it.location}</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            {it.capacity != null ? (
-              <>
-                <UsersIcon /> {it.capacity} people
-              </>
-            ) : (
-              <>
-                <BoxIcon /> {it.units} unit{it.units === 1 ? "" : "s"} available
-              </>
-            )}
+            <BoxIcon />{" "}
+            {it.status === "BORROWED"
+              ? "Currently unavailable"
+              : `${it.quantity} ${it.unitLabel} available`}
           </span>
         </div>
       </div>
@@ -269,7 +245,7 @@ function DetailSheet({
   onFav,
   onClose,
 }: {
-  it: Item;
+  it: BorrowItemRow;
   fav: boolean;
   onFav: () => void;
   onClose: () => void;
@@ -295,9 +271,7 @@ function DetailSheet({
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-navy-100 sm:hidden" />
 
         <div className="flex items-start gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-navy-50 text-4xl">
-            {it.emoji}
-          </div>
+          <Thumb it={it} className="h-20 w-20 shrink-0 rounded-2xl text-4xl" />
           <div className="min-w-0 flex-1">
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.cls}`}
@@ -306,7 +280,7 @@ function DetailSheet({
               {s.label}
             </span>
             <h2 className="mt-1 text-lg font-bold text-navy-800">{it.name}</h2>
-            <p className="text-xs text-navy-400">{CAT_LABEL[it.cat] ?? it.cat}</p>
+            <p className="text-xs text-navy-400">{it.categoryLabel}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <button
@@ -328,22 +302,40 @@ function DetailSheet({
           </div>
         </div>
 
-        <p className="mt-3 text-sm leading-relaxed text-navy-500">{it.description}</p>
+        {it.description && (
+          <p className="mt-3 text-sm leading-relaxed text-navy-500">{it.description}</p>
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <InfoTile icon={<PinIcon />} label="Location" value={it.location} />
-          <InfoTile icon={<ClockIcon />} label="Schedule" value={it.schedule} />
+          {it.location && (
+            <InfoTile icon={<PinIcon />} label="Location" value={it.location} />
+          )}
+          {it.schedule && (
+            <InfoTile icon={<ClockIcon />} label="Schedule" value={it.schedule} />
+          )}
           <InfoTile
-            icon={it.capacity != null ? <UsersIcon /> : <BoxIcon />}
-            label={it.capacity != null ? "Capacity" : "Units"}
-            value={
-              it.capacity != null
-                ? `${it.capacity} people`
-                : `${it.units} available`
-            }
+            icon={<BoxIcon />}
+            label="Available"
+            value={`${it.quantity} ${it.unitLabel}`}
           />
           <InfoTile icon={<TagIcon />} label="Status" value={s.label} />
         </div>
+
+        {it.parts.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-semibold text-navy-800">What&rsquo;s inside</p>
+            <ul className="flex flex-wrap gap-2">
+              {it.parts.map((p, i) => (
+                <li
+                  key={i}
+                  className="rounded-full bg-navy-50 px-3 py-1 text-xs font-medium text-navy-700"
+                >
+                  {p.name} · {p.qty}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <button
           type="button"
@@ -352,7 +344,7 @@ function DetailSheet({
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gold py-4 text-base font-bold text-navy-900 shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-navy-100 disabled:text-navy-400"
         >
           {it.status === "BORROWED" ? (
-            "Currently borrowed"
+            "Currently unavailable"
           ) : phase === "loading" ? (
             <>
               <Spinner /> Requesting…
@@ -412,15 +404,6 @@ function PinIcon() {
     <svg {...ic}>
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
       <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-function UsersIcon() {
-  return (
-    <svg {...ic}>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }

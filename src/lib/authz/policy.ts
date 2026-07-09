@@ -51,6 +51,7 @@ export type Action =
   | "cafeteria:manageMenu"
   | "cafeteria:manageAllergens"
   | "cafeteria:checkin"
+  | "borrow:manage"
   | "market:manage"
   | "admin:grantRoles"
   | "reports:view";
@@ -142,6 +143,10 @@ export function can(actor: Actor, action: Action, resource: Resource = {}): bool
     case "cafeteria:manageAllergens":
     case "cafeteria:checkin":
       return hasRole(actor, "CAFETERIA_ADMIN");
+
+    // The permission (dorm) admin maintains the campus borrow catalog.
+    case "borrow:manage":
+      return hasRole(actor, "DORMITORY_ADMIN");
 
     case "market:manage":
       return hasRole(actor, "MARKET_ADMIN");

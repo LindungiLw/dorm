@@ -179,6 +179,28 @@ model AllergenEntry {
   updatedAt DateTime @updatedAt
 }
 
+// A borrowable item or bookable room, maintained by the permission (dorm) admin and read
+// by everyone. `imageUrl` is a small data URL photo (falls back to `emoji`); `quantity` is
+// how many are available (people for a room, units for equipment); `parts` is a JSON list
+// of the components inside a set, e.g. a badminton set's rackets and shuttlecocks.
+model BorrowItem {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   @default("OTHER") // ROOM | ELECTRONICS | LAB | SPORTS | MUSIC | OTHER
+  imageUrl    String? // data URL of the item photo
+  emoji       String? // icon fallback when there is no photo
+  location    String   @default("")
+  schedule    String   @default("")
+  quantity    Int      @default(1) // how many available (capacity for a room, units otherwise)
+  unitLabel   String   @default("units") // "people" for rooms/labs, "units" for equipment
+  description String   @default("")
+  parts       String? // JSON: [{ name, qty }] — the parts inside a set
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
 // A marketplace product listing. Facilitator-only: `price` is a label in whole Rupiah;
 // settlement is offline. Category is one of ELECTRONICS | FASHION | STATIONERY | FOOD_BEVERAGE.
 model Product {
