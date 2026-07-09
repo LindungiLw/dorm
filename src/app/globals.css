@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  /* Light-only app: `only light` also opts form controls out of the browser/OS
+     force-dark, so native <select> popups don't render on a black background. */
+  color-scheme: only light;
 }
 
 body {
@@ -123,6 +125,8 @@ select.input {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  /* Keep the opened option list light on phones with force-dark. */
+  color-scheme: only light;
   min-height: 2.6rem;
   padding-right: 2.5rem;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231e2f6d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -130,6 +134,17 @@ select.input {
   background-position: right 0.75rem center;
   background-size: 1.2rem;
   cursor: pointer;
+}
+
+/* Explicit light option colours for browsers that still theme the popup. */
+select.input option {
+  background-color: #ffffff;
+  color: #0e1633;
+}
+
+/* Date / time pickers open a native calendar too — keep those light as well. */
+.input {
+  color-scheme: only light;
 }
 
 /* On phones, 16px form controls stop iOS zoom-on-focus; a taller box is a comfier tap
