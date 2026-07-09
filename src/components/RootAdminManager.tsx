@@ -72,7 +72,7 @@ function GrantForm() {
               name="role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="input text-base sm:text-sm"
+              className="input"
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -90,7 +90,7 @@ function GrantForm() {
                 id="grant-dorm"
                 name="dormId"
                 defaultValue="DORM-A"
-                className="input text-base sm:text-sm"
+                className="input"
               >
                 <option value="DORM-A">DORM-A</option>
                 <option value="DORM-B">DORM-B</option>
@@ -112,31 +112,34 @@ function GrantForm() {
 
 function AdminRowItem({ admin }: { admin: AdminRow }) {
   const [state, action] = useActionState<RootState, FormData>(revokeRoleAction, {});
+  const scope = admin.scopeId ? admin.scopeId.replace(/-/g, " ") : "";
   return (
-    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-semibold text-navy-800">{admin.fullName}</p>
-        <p className="text-xs text-navy-400">{admin.email}</p>
-        {state.error && (
-          <p className="mt-1 text-xs text-red-600">{state.error}</p>
-        )}
+    <li className="rounded-xl border border-navy-100 p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-navy-800">
+            {admin.fullName}
+          </p>
+          <p className="truncate text-xs text-navy-400">{admin.email}</p>
+        </div>
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
+          <span className="rounded-full bg-navy-100 px-2.5 py-1 text-xs font-semibold text-navy-700">
+            {roleLabel(admin.role)}
+            {scope ? ` · ${scope}` : ""}
+          </span>
+          <form action={action}>
+            <input type="hidden" name="memberId" value={admin.memberId} />
+            <input type="hidden" name="role" value={admin.role} />
+            <SubmitButton
+              className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              pendingText="Revoking…"
+            >
+              Revoke
+            </SubmitButton>
+          </form>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-semibold text-navy-700">
-          {roleLabel(admin.role)}
-          {admin.scopeId ? ` · ${admin.scopeId}` : ""}
-        </span>
-        <form action={action}>
-          <input type="hidden" name="memberId" value={admin.memberId} />
-          <input type="hidden" name="role" value={admin.role} />
-          <SubmitButton
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-            pendingText="…"
-          >
-            Revoke
-          </SubmitButton>
-        </form>
-      </div>
+      {state.error && <p className="mt-2 text-xs text-red-600">{state.error}</p>}
     </li>
   );
 }
@@ -151,10 +154,10 @@ export function RootAdminManager({ admins }: { admins: AdminRow[] }) {
         </p>
         {admins.length === 0 ? (
           <p className="py-2 text-sm text-navy-400">
-            No module admins yet — grant one above.
+            No module admins yet. Grant one above.
           </p>
         ) : (
-          <ul className="divide-y divide-navy-50">
+          <ul className="space-y-2">
             {admins.map((a) => (
               <AdminRowItem key={a.assignmentId} admin={a} />
             ))}

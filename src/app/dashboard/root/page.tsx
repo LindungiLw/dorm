@@ -17,7 +17,7 @@ export default async function RootPage() {
   return (
     <div>
       <PageHeader
-        title="Root — Access Control"
+        title="Root Access Control"
         subtitle="Grant or revoke Cafeteria, Dorm, and Market admin access"
         icon="🛡️"
       />

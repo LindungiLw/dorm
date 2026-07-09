@@ -116,3 +116,27 @@ body {
     animation: none;
   }
 }
+
+/* Dropdowns render as a bordered button with a consistent chevron (native <select> looks
+   different on every phone). */
+select.input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231e2f6d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* On phones, 16px form controls stop iOS zoom-on-focus and give a comfier tap target. */
+@media (max-width: 639px) {
+  .input {
+    font-size: 1rem;
+  }
+  select.input {
+    min-height: 2.75rem;
+  }
+}
