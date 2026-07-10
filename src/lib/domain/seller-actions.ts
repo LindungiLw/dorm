@@ -109,6 +109,9 @@ export async function decideSellerAction(
     decision: parsed.data.decision,
   });
   revalidatePath("/dashboard/market/admin");
+  // A decision changes what the catalog shows (a re-approved seller's existing listings
+  // reappear), so refresh it too.
+  revalidatePath("/dashboard/market/catalog");
   return { ok: `Request ${parsed.data.decision.toLowerCase()}.` };
 }
 

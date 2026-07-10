@@ -7,11 +7,11 @@ import { ModuleSubnav, CAFETERIA_TABS } from "@/components/ModuleSubnav";
 import { MenuCalendar } from "@/components/MenuCalendar";
 
 export default async function CafeteriaMenuPage() {
-  const actor = await getCurrentActor();
+  // The menu load doesn't depend on the actor, so fetch both at once.
+  const [actor, menu] = await Promise.all([getCurrentActor(), getAllMenu()]);
   if (!actor) return null;
 
   const canEdit = can(actor, "cafeteria:manageMenu");
-  const menu = await getAllMenu();
 
   return (
     <div>

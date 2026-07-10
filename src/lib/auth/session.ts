@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import type { Actor, Role } from "@/lib/authz/policy";
@@ -7,7 +8,10 @@ import type { Actor, Role } from "@/lib/authz/policy";
 // from the (directory-authoritative) DB on EVERY request. This keeps the instant-
 // revocation property: suspend a member or change a role and it takes effect immediately,
 // because roles/status are never trusted from a long-lived token.
-export async function getCurrentActor(): Promise<Actor | null> {
+//
+// Wrapped in React `cache` so the layout and the page (and any server action) that each
+// call it within the SAME request share one member query instead of hitting Neon twice.
+export const getCurrentActor = cache(async (): Promise<Actor | null> => {
   const session = await auth();
   const email = session?.user?.email;
   if (!email) return null;
@@ -33,4 +37,4 @@ export async function getCurrentActor(): Promise<Actor | null> {
       scopeId: r.scopeId,
     })),
   };
-}
+});
