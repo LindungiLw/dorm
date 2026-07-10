@@ -12,10 +12,14 @@ export async function getProducts(): Promise<Product[]> {
       description: true,
       price: true,
       category: true,
+      imageUrl: true,
       emoji: true,
       sellerId: true,
     },
     orderBy: { createdAt: "desc" },
+    // Backstop: the catalog inlines each photo as a data URL, so cap how many rows ship in
+    // one payload. Ample for a campus deployment; object storage is the long-term fix.
+    take: 300,
   });
 
   const sellerIds = [
@@ -46,6 +50,7 @@ export async function getProducts(): Promise<Product[]> {
         description: p.description,
         price: p.price,
         category: p.category,
+        imageUrl: p.imageUrl,
         emoji: p.emoji,
         sellerKey: p.sellerId ?? null,
         storeName: s?.storeName ?? null,

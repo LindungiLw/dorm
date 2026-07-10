@@ -88,6 +88,7 @@ export async function getMyProducts(sellerId: string): Promise<Product[]> {
       description: true,
       price: true,
       category: true,
+      imageUrl: true,
       emoji: true,
     },
     orderBy: { createdAt: "desc" },

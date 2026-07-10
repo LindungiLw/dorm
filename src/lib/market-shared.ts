@@ -7,6 +7,7 @@ export type Product = {
   description: string;
   price: number; // whole Rupiah
   category: string;
+  imageUrl?: string | null; // data URL of the product photo (falls back to emoji)
   emoji: string | null;
   // Seller / payment info (present in the public catalog so checkout can show the
   // right QRIS). Optional because seeded demo items have no seller.

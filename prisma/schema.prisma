@@ -215,7 +215,8 @@ model Product {
   description String
   price       Int // whole Rupiah (integer money, per the plan)
   category    String
-  emoji       String? // placeholder visual until photo storage exists
+  imageUrl    String? // data URL of the product photo
+  emoji       String? // icon fallback when there is no photo
   sellerId    String? // owner (member) — optional for seeded demo items
   createdAt   DateTime @default(now())
 

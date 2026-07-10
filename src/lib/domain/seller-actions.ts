@@ -155,8 +155,14 @@ const productSchema = z.object({
   category: z.string().trim().min(2, "Enter a category.").max(40),
   price: z.coerce.number().int("Price must be a whole number.").min(0).max(1_000_000_000),
   description: z.string().trim().min(3, "Add a short description.").max(500),
+  imageUrl: z.string().trim().optional(),
   emoji: z.string().trim().max(8).optional(),
 });
+
+// A data-URL product photo is stored inline and the catalog ships every one, so keep each
+// small and cap how many listings a seller can hold.
+const MAX_PRODUCT_IMAGE_CHARS = 300_000;
+const MAX_PRODUCTS_PER_SELLER = 40;
 
 async function requireApprovedSeller(memberId: string): Promise<boolean> {
   const s = await prisma.sellerProfile.findUnique({
@@ -176,15 +182,37 @@ export async function createProductAction(
     return { error: "Only approved sellers can add products." };
   }
 
+  // Bound how many listings one seller can hold, so the shared catalog stays light.
+  const existing = await prisma.product.count({ where: { sellerId: actor.id } });
+  if (existing >= MAX_PRODUCTS_PER_SELLER) {
+    return {
+      error: `You've reached the ${MAX_PRODUCTS_PER_SELLER} product limit. Remove one before adding more.`,
+    };
+  }
+
   const parsed = productSchema.safeParse({
     name: formData.get("name"),
     category: formData.get("category"),
     price: formData.get("price"),
     description: formData.get("description"),
+    imageUrl: formData.get("imageUrl") ?? undefined,
     emoji: formData.get("emoji") ?? undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
+  }
+
+  // Optional product photo: must be an image data URL and small enough to store inline.
+  let imageUrl: string | null = null;
+  const rawImage = parsed.data.imageUrl;
+  if (rawImage) {
+    if (!rawImage.startsWith("data:image/")) {
+      return { error: "The photo must be an image." };
+    }
+    if (rawImage.length > MAX_PRODUCT_IMAGE_CHARS) {
+      return { error: "That photo is too large. Please use a smaller image." };
+    }
+    imageUrl = rawImage;
   }
 
   await prisma.product.create({
@@ -193,6 +221,7 @@ export async function createProductAction(
       category: parsed.data.category,
       price: parsed.data.price,
       description: parsed.data.description,
+      imageUrl,
       emoji: parsed.data.emoji || null,
       sellerId: actor.id,
     },

@@ -3,7 +3,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatRupiah, type Product } from "@/lib/market-shared";
 
-const visual = (p: Product) => p.emoji || "📦";
+// Product thumbnail: the uploaded photo when present, otherwise the emoji placeholder.
+function ProductThumb({
+  p,
+  box,
+  text,
+}: {
+  p: Product;
+  box: string;
+  text: string;
+}) {
+  if (p.imageUrl) {
+    return (
+      <div className={`overflow-hidden ${box}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className={`flex items-center justify-center bg-navy-50 ${box} ${text}`}>
+      {p.emoji || "📦"}
+    </div>
+  );
+}
 
 type SellerGroup = {
   key: string;
@@ -172,9 +195,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
               }}
               className="flex cursor-pointer flex-col rounded-2xl border border-navy-100 bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="flex aspect-square items-center justify-center rounded-xl bg-navy-50 text-4xl">
-                {visual(p)}
-              </div>
+              <ProductThumb p={p} box="aspect-square rounded-xl" text="text-4xl" />
               <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-navy-800">
                 {p.name}
               </h3>
@@ -202,9 +223,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
             <CloseButton onClick={() => setSelected(null)} />
           </div>
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-28 w-28 items-center justify-center rounded-2xl bg-navy-50 text-6xl">
-              {visual(selected)}
-            </div>
+            <ProductThumb p={selected} box="h-28 w-28 rounded-2xl" text="text-6xl" />
             <span className="mt-3 inline-block rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-semibold text-navy-700">
               {selected.category}
             </span>
@@ -264,9 +283,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                   if (!p) return null;
                   return (
                     <li key={id} className="flex items-center gap-3 py-2">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-navy-50 text-xl">
-                        {visual(p)}
-                      </span>
+                      <ProductThumb p={p} box="h-10 w-10 shrink-0 rounded-lg" text="text-xl" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-navy-800">
                           {p.name}
